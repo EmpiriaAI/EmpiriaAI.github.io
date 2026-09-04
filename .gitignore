@@ -1,0 +1,14 @@
+# macOS
+.DS_Store
+._*
+
+# Editors
+.vscode/
+.idea/
+*.swp
+
+# Deliberately minimal. This repository is served verbatim by Pages, so
+# anything ignored here is simply absent from the published site. Do NOT
+# paste in a language template: the Python one ignores /site as mkdocs
+# build output, which in a repository like this quietly keeps the whole
+# homepage out of every commit and publishes an empty artifact.

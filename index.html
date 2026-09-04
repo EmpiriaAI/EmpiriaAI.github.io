@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en" data-page-node-id="S4ykZjCsXpINSl4FWkviET">
+<head data-page-node-id="GfFSBzS9zcsq6qWvRt1IVT">
+<meta charset="utf-8" data-page-node-id="d4XflNEls4puT5yC7OsAa2">
+<meta name="viewport" content="width=device-width, initial-scale=1" data-page-node-id="ENEwblnCP2gMQ6FXGlHmJ5">
+<title>Empiria Labs — Build the world AI learns from</title>
+<meta name="description" content="Empiria Labs builds environments where AI can act, observe, verify, and learn from experience — enabling intelligence to move beyond existing data and accelerate progress in robotics, medicine, materials, and science." data-page-node-id="vL9fcjuewf59uVLoCxAaLF">
+<meta name="theme-color" content="#08080A" data-page-node-id="vZuVgmaafi4vuPuJoao4ZB">
+
+<meta property="og:type" content="website" data-page-node-id="UqDRp9SfADZAGO3FOG2Aaw">
+<meta property="og:title" content="Empiria Labs — Build the world AI learns from" data-page-node-id="5TRdMEuaH43gFODjvjqXCp">
+<meta property="og:description" content="We build environments where AI can act, observe, verify, and learn from experience." data-page-node-id="SfEHBBrdJQU59LVyOJewcP">
+
+<!-- Fonts are served from this origin, not fonts.googleapis.com — that
+     host is unreachable from mainland China and the page was silently
+     falling back to the system stack. See fonts.css.
+
+     All four faces are above the fold, so all four are preloaded and the
+     hero paints once in the right type instead of reflowing when the swap
+     lands: Space Grotesk sets the h1, Inter Tight the lead, its italic the
+     emphasised clause, and JetBrains Mono the eyebrow, the announcement
+     strip and the hero footnote. -->
+<link rel="stylesheet" href="fonts.css">
+<link rel="preload" href="fonts/space-grotesk.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/inter-tight.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/inter-tight-italic.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/jetbrains-mono.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="style.css" data-page-node-id="rp2kBFCGaVZBau4u1gBvtb">
+<!-- Set before first paint so the hero entrance never flashes. This is a
+     SEPARATE class from html.js on purpose: the entrance completes in pure
+     CSS, so it is safe to arm inline, whereas the scroll-reveal hidden state
+     must stay gated on script.js having actually run. -->
+<script>document.documentElement.classList.add('anim');</script>
+</head>
+<body id="top" data-page-node-id="gCxjPvYwehBJOhRGBx71BG">
+
+<!-- The continuous ground. First element in the body so it sits behind
+     every band without needing a negative z-index, which would put it
+     behind body's own background fill and make it invisible. -->
+<div class="world" aria-hidden="true"><div class="world-grid"></div></div>
+
+<!-- ── Header ───────────────────────────────────────────── -->
+<header class="site-head" data-page-node-id="wrDWJMkdEFqoFGxdGcBZjT">
+  <div class="container head-inner" data-page-node-id="zLouhTFe5YxUDVbsFaDKAg">
+    <a class="brand" href="#top" data-page-node-id="WwnG4KX8JU3ciAP3rd2Dba">
+      <span class="brand-mark" aria-hidden="true" data-page-node-id="ZacaVo9rQobAnCRdpzGkDq">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" data-page-node-id="Jlh7zKpwDEQVDjVXvKyhZp">
+          <circle cx="12" cy="12" r="10.5" stroke="currentColor" stroke-width="1.2" data-page-node-id="DIphHQ4BUNSXvPuuueGMGM"/>
+          <path d="M12 1.5v21M1.5 12h21" stroke="currentColor" stroke-width="1.2" opacity=".38" data-page-node-id="5GixrVhQHjCr602DDCDAoG"/>
+          <circle cx="12" cy="12" r="3.4" fill="currentColor" data-page-node-id="7H9x3TATXQF8XcIbW5DWTz"/>
+          <path d="M4.6 4.6 19.4 19.4" stroke="currentColor" stroke-width="1.2" opacity=".38" data-page-node-id="jPDve9cDJYp2pUqaZTiNHD"/>
+        </svg>
+      </span>
+      <span class="brand-name" data-page-node-id="60XooffyWhwXD83SIpzWSh">Empiria&nbsp;Labs</span>
+    </a>
+
+    <nav class="site-nav" aria-label="Primary" data-page-node-id="wQRDz2NYtjD3FDEQUgBwvD">
+      <a href="#belief" data-page-node-id="GqlEoro5xr4lTSYDZwbtqh">Belief</a>
+      <a href="#mission" data-page-node-id="1qGXQ9mCJUX9X3onZPyH5l">Mission</a>
+      <a href="#approach" data-page-node-id="9iJX1Ym7nTksumZv8a5hb4">Approach</a>
+      <a href="#stack">Stack</a>
+      <a href="#environments">Environments</a>
+      <a href="#vision" data-page-node-id="5YXteMXTBBJFZA86PqEB8m">Vision</a>
+    </nav>
+
+    <a class="head-cta" href="#contact" data-page-node-id="vhZOMclco2X8mugdVSmCup">Get in touch</a>
+
+    <button class="nav-toggle" id="navToggle" aria-label="Menu" aria-expanded="false" data-page-node-id="GjLLru3dCHO2u9oHTd3JkP">
+      <span data-page-node-id="ZqNSkuiqa0LYCAlP3pcxDl"></span><span data-page-node-id="yBCvzBycBJnw0g3HhqjEpb"></span>
+    </button>
+  </div>
+</header>
+
+<!-- ── Hero ─────────────────────────────────────────────── -->
+<section class="hero">
+  <!-- ── Announcement band ─────────────────────────────
+       Same two-identical-rows / -50 percent construction as the ticker
+       further down, but this is the one place the accent goes solid: it
+       has to be seen before anything else on the page.
+
+       It enumerates the KINDS of world being built, where the lower band
+       names the individual ones — taxonomy above the fold, instances
+       below it. Serif and bold here against the sans-serif whisper down
+       there, so two marquees in one viewport never compete.
+
+       z-index 3: .hero-field is inset:0 across the whole hero and
+       .hero-inner already claims 2. -->
+  <section class="hero-banner" aria-label="Kinds of task environment we build">
+    <div class="hb-track">
+    <div class="hb-row">
+      <span class="hb-lead">Environment types</span><span class="hb-sep" aria-hidden="true">/</span>
+      <span class="hb-item">Repository-scale editing</span><span class="hb-sep" aria-hidden="true">/</span>
+      <span class="hb-item">Test authoring</span><span class="hb-sep" aria-hidden="true">/</span>
+      <span class="hb-item">Refactoring under regression</span><span class="hb-sep" aria-hidden="true">/</span>
+      <span class="hb-item">Codebase question answering</span><span class="hb-sep" aria-hidden="true">/</span>
+      <span class="hb-item">Terminal operation</span><span class="hb-sep" aria-hidden="true">/</span>
+      <span class="hb-item">Repository synthesis from spec</span><span class="hb-sep" aria-hidden="true">/</span>
+      <span class="hb-item">Security exploitation and repair</span><span class="hb-sep" aria-hidden="true">/</span>
+      <span class="hb-item">Long-horizon engineering</span><span class="hb-sep" aria-hidden="true">/</span>
+      <span class="hb-item">Office document workflows</span><span class="hb-sep" aria-hidden="true">/</span>
+      <span class="hb-item">Tool orchestration</span><span class="hb-sep" aria-hidden="true">/</span>
+      <span class="hb-item">Desktop and web automation</span><span class="hb-sep" aria-hidden="true">/</span>
+      <span class="hb-item">Domain-specific tooling</span><span class="hb-sep" aria-hidden="true">/</span>
+    </div>
+    <div class="hb-row" aria-hidden="true">
+      <span class="hb-lead">Environment types</span><span class="hb-sep" aria-hidden="true">/</span>
+      <span class="hb-item">Repository-scale editing</span><span class="hb-sep" aria-hidden="true">/</span>
+      <span class="hb-item">Test authoring</span><span class="hb-sep" aria-hidden="true">/</span>
+      <span class="hb-item">Refactoring under regression</span><span class="hb-sep" aria-hidden="true">/</span>
+      <span class="hb-item">Codebase question answering</span><span class="hb-sep" aria-hidden="true">/</span>
+      <span class="hb-item">Terminal operation</span><span class="hb-sep" aria-hidden="true">/</span>
+      <span class="hb-item">Repository synthesis from spec</span><span class="hb-sep" aria-hidden="true">/</span>
+      <span class="hb-item">Security exploitation and repair</span><span class="hb-sep" aria-hidden="true">/</span>
+      <span class="hb-item">Long-horizon engineering</span><span class="hb-sep" aria-hidden="true">/</span>
+      <span class="hb-item">Office document workflows</span><span class="hb-sep" aria-hidden="true">/</span>
+      <span class="hb-item">Tool orchestration</span><span class="hb-sep" aria-hidden="true">/</span>
+      <span class="hb-item">Desktop and web automation</span><span class="hb-sep" aria-hidden="true">/</span>
+      <span class="hb-item">Domain-specific tooling</span><span class="hb-sep" aria-hidden="true">/</span>
+    </div>
+    </div>
+  </section>
+
+  <!-- The ground plane is a CSS 3D surface rather than SVG: only a real
+       perspective transform can recede forever toward the viewer, and it
+       costs one compositor layer instead of repainting paths. -->
+  <div class="hero-field" aria-hidden="true">
+    <div class="plane-wrap">
+      <div class="grid-plane"></div>
+    </div>
+
+    <!-- A second, identical plane with brighter lines, revealed only through a
+         screen-space radial mask at the pointer. Identical perspective and
+         identical animation timing means it registers exactly on top of the
+         base grid, so the pointer reads as a sensor lighting up the cells it
+         is over rather than as a glow pasted on top. -->
+    <div class="plane-wrap plane-lit">
+      <div class="grid-plane"></div>
+    </div>
+
+    <div class="horizon-glow"></div>
+    <div class="horizon"></div>
+
+    <!-- One mark per task environment actually in build: 13 on the left
+         for Agentic Coding, 11 on the right for Working Agent, the same
+         split the Environments section lists and the ticker names. The
+         hero stops being decorated and starts being the inventory.
+
+         --s is a perspective scale, not decoration: marks near the
+         horizon are small and crowded, marks near the viewer are large
+         and sparse, so they read as lying ON the plane rather than
+         floating over it. It drives width/height rather than transform
+         because evDot already owns transform.
+
+         Only six carry .ev-live. Twenty-four pulsing dots would be a
+         starfield; twenty-four present with six live reads as an
+         inventory that is partly running. -->
+    <div class="events">
+      <span class="ev" style="--x:44%;--y:57%;--s:.55"></span>
+      <span class="ev" style="--x:31%;--y:59%;--s:.6"></span>
+      <span class="ev" style="--x:18%;--y:61%;--s:.62"></span>
+      <span class="ev ev-live" style="--x:39%;--y:63%;--s:.7;--d:-7.8s"></span>
+      <span class="ev" style="--x:9%;--y:65%;--s:.72"></span>
+      <span class="ev" style="--x:26%;--y:67%;--s:.78"></span>
+      <span class="ev ev-live" style="--x:45%;--y:69%;--s:.8;--d:0s"></span>
+      <span class="ev" style="--x:14%;--y:72%;--s:.85"></span>
+      <span class="ev" style="--x:35%;--y:75%;--s:.9"></span>
+      <span class="ev" style="--x:5%;--y:79%;--s:.95"></span>
+      <span class="ev" style="--x:22%;--y:82%;--s:1"></span>
+      <span class="ev ev-live" style="--x:41%;--y:87%;--s:1.1;--d:-3.6s"></span>
+      <span class="ev" style="--x:12%;--y:92%;--s:1.15"></span>
+
+      <span class="ev" style="--x:56%;--y:56%;--s:.5"></span>
+      <span class="ev" style="--x:69%;--y:58%;--s:.58"></span>
+      <span class="ev" style="--x:82%;--y:60%;--s:.6"></span>
+      <span class="ev ev-live" style="--x:93%;--y:62%;--s:.66;--d:-6.5s"></span>
+      <span class="ev ev-live" style="--x:61%;--y:65%;--s:.74;--d:-1.9s"></span>
+      <span class="ev" style="--x:75%;--y:68%;--s:.8"></span>
+      <span class="ev" style="--x:88%;--y:71%;--s:.86"></span>
+      <span class="ev" style="--x:66%;--y:75%;--s:.92"></span>
+      <span class="ev ev-live" style="--x:79%;--y:80%;--s:1;--d:-5.2s"></span>
+      <span class="ev" style="--x:94%;--y:85%;--s:1.08"></span>
+      <span class="ev" style="--x:71%;--y:90%;--s:1.14"></span>
+    </div>
+
+    <!-- the agent: trails the cursor with a little lag so it reads as a
+         probe moving through the environment, not a glued-on overlay -->
+    <div class="probe"></div>
+  </div>
+  <div class="hero-veil" aria-hidden="true"></div>
+
+  <div class="container hero-inner">
+    <p class="eyebrow rise" style="--d:.23s">Empiria Labs</p>
+
+    <h1 class="hero-title">
+      <span class="rise" style="--d:.34s">Build the world</span>
+      <em class="rise" style="--d:.48s">AI learns from.</em>
+    </h1>
+    <p class="hero-title-zh rise" style="--d:.62s" lang="zh-CN">为 AI 构建它赖以学习的世界。</p>
+
+    <p class="hero-lead rise" style="--d:.74s">
+      We build environments where AI can act, observe, verify, and learn from
+      experience — enabling intelligence to move beyond existing data.
+    </p>
+
+    <div class="hero-cta rise" style="--d:.86s">
+      <a class="btn btn-solid" href="#mission">Read our mission</a>
+      <a class="btn btn-quiet" href="#contact">Work with us</a>
+    </div>
+  </div>
+
+  <div class="container hero-foot rise" style="--d:1s">
+    <p class="mark">Intelligence through interaction.</p>
+    <p class="mark-zh" lang="zh-CN">智能源于互动。</p>
+  </div>
+</section>
+
+<!-- ── Ticker: the environments, in one glance ─────────
+     Mechanism lifted from the reference site's rule-bounded tagline
+     strip: one max-content track holding two byte-identical rows,
+     translated to exactly -50 percent so the wrap point is invisible.
+
+     The reference fills this slot with a "trusted by" logo wall. This
+     lab has no partners to name, and inventing one would be fabricating
+     endorsements — so the strip carries the real inventory instead.
+     Every name here is an environment Empiria is actually building, and
+     the track labels make the band self-describing without a caption. -->
+<section class="ticker" aria-label="Task environments currently in build">
+  <div class="ticker-track">
+      <div class="ticker-row">
+        <span class="ticker-lead">Agentic Coding</span><span class="ticker-sep" aria-hidden="true"></span>
+        <span class="ticker-item">SWE-bench Multilingual</span><span class="ticker-sep" aria-hidden="true"></span>
+        <span class="ticker-item">SWE-bench Pro</span><span class="ticker-sep" aria-hidden="true"></span>
+        <span class="ticker-item">DeepSWE</span><span class="ticker-sep" aria-hidden="true"></span>
+        <span class="ticker-item">SWE Atlas Codebase Q&amp;A</span><span class="ticker-sep" aria-hidden="true"></span>
+        <span class="ticker-item">SWE Atlas Test Writing</span><span class="ticker-sep" aria-hidden="true"></span>
+        <span class="ticker-item">SWE Atlas Refactoring</span><span class="ticker-sep" aria-hidden="true"></span>
+        <span class="ticker-item">SWE-Marathon</span><span class="ticker-sep" aria-hidden="true"></span>
+        <span class="ticker-item">Terminal-Bench 2.1</span><span class="ticker-sep" aria-hidden="true"></span>
+        <span class="ticker-item">NL2Repo-Bench</span><span class="ticker-sep" aria-hidden="true"></span>
+        <span class="ticker-item">CyberGym</span><span class="ticker-sep" aria-hidden="true"></span>
+        <span class="ticker-item">ProgramBench</span><span class="ticker-sep" aria-hidden="true"></span>
+        <span class="ticker-item">PostTrainBench V1.1</span><span class="ticker-sep" aria-hidden="true"></span>
+        <span class="ticker-item">Harbor-Index</span><span class="ticker-sep" aria-hidden="true"></span>
+        <span class="ticker-lead">Working Agent</span><span class="ticker-sep" aria-hidden="true"></span>
+        <span class="ticker-item">OfficeQA Pro</span><span class="ticker-sep" aria-hidden="true"></span>
+        <span class="ticker-item">MCP-Atlas</span><span class="ticker-sep" aria-hidden="true"></span>
+        <span class="ticker-item">Toolathlon-Verified</span><span class="ticker-sep" aria-hidden="true"></span>
+        <span class="ticker-item">APEX-Agents</span><span class="ticker-sep" aria-hidden="true"></span>
+        <span class="ticker-item">SkillsBench</span><span class="ticker-sep" aria-hidden="true"></span>
+        <span class="ticker-item">JobBench</span><span class="ticker-sep" aria-hidden="true"></span>
+        <span class="ticker-item">WorkspaceBench</span><span class="ticker-sep" aria-hidden="true"></span>
+        <span class="ticker-item">Agents' Last Exam</span><span class="ticker-sep" aria-hidden="true"></span>
+        <span class="ticker-item">GDPval-AA V2</span><span class="ticker-sep" aria-hidden="true"></span>
+        <span class="ticker-item">AutomationBench</span><span class="ticker-sep" aria-hidden="true"></span>
+        <span class="ticker-item">BankerToolBench</span><span class="ticker-sep" aria-hidden="true"></span>
+      </div>
+      <div class="ticker-row" aria-hidden="true">
+        <span class="ticker-lead">Agentic Coding</span><span class="ticker-sep" aria-hidden="true"></span>
+        <span class="ticker-item">SWE-bench Multilingual</span><span class="ticker-sep" aria-hidden="true"></span>
+        <span class="ticker-item">SWE-bench Pro</span><span class="ticker-sep" aria-hidden="true"></span>
+        <span class="ticker-item">DeepSWE</span><span class="ticker-sep" aria-hidden="true"></span>
+        <span class="ticker-item">SWE Atlas Codebase Q&amp;A</span><span class="ticker-sep" aria-hidden="true"></span>
+        <span class="ticker-item">SWE Atlas Test Writing</span><span class="ticker-sep" aria-hidden="true"></span>
+        <span class="ticker-item">SWE Atlas Refactoring</span><span class="ticker-sep" aria-hidden="true"></span>
+        <span class="ticker-item">SWE-Marathon</span><span class="ticker-sep" aria-hidden="true"></span>
+        <span class="ticker-item">Terminal-Bench 2.1</span><span class="ticker-sep" aria-hidden="true"></span>
+        <span class="ticker-item">NL2Repo-Bench</span><span class="ticker-sep" aria-hidden="true"></span>
+        <span class="ticker-item">CyberGym</span><span class="ticker-sep" aria-hidden="true"></span>
+        <span class="ticker-item">ProgramBench</span><span class="ticker-sep" aria-hidden="true"></span>
+        <span class="ticker-item">PostTrainBench V1.1</span><span class="ticker-sep" aria-hidden="true"></span>
+        <span class="ticker-item">Harbor-Index</span><span class="ticker-sep" aria-hidden="true"></span>
+        <span class="ticker-lead">Working Agent</span><span class="ticker-sep" aria-hidden="true"></span>
+        <span class="ticker-item">OfficeQA Pro</span><span class="ticker-sep" aria-hidden="true"></span>
+        <span class="ticker-item">MCP-Atlas</span><span class="ticker-sep" aria-hidden="true"></span>
+        <span class="ticker-item">Toolathlon-Verified</span><span class="ticker-sep" aria-hidden="true"></span>
+        <span class="ticker-item">APEX-Agents</span><span class="ticker-sep" aria-hidden="true"></span>
+        <span class="ticker-item">SkillsBench</span><span class="ticker-sep" aria-hidden="true"></span>
+        <span class="ticker-item">JobBench</span><span class="ticker-sep" aria-hidden="true"></span>
+        <span class="ticker-item">WorkspaceBench</span><span class="ticker-sep" aria-hidden="true"></span>
+        <span class="ticker-item">Agents' Last Exam</span><span class="ticker-sep" aria-hidden="true"></span>
+        <span class="ticker-item">GDPval-AA V2</span><span class="ticker-sep" aria-hidden="true"></span>
+        <span class="ticker-item">AutomationBench</span><span class="ticker-sep" aria-hidden="true"></span>
+        <span class="ticker-item">BankerToolBench</span><span class="ticker-sep" aria-hidden="true"></span>
+      </div>
+  </div>
+</section>
+
+<!-- ── Core belief ──────────────────────────────────────── -->
+<section class="section bordered belief" id="belief" data-page-node-id="GIv3CAmdCtzUUvTCCTMDM7">
+  <div class="container" data-page-node-id="DDuCdT4Uv8uDR9OscpXARH">
+    <p class="label reveal" data-page-node-id="88LSUyhi9knFIiZyG3FsZg">Core belief <span lang="zh-CN" data-page-node-id="D1CFcQTB5apj9hALBRVMuM">核心判断</span></p>
+    <blockquote class="statement reveal" data-page-node-id="6a9SSF4YLk5gmCQJOVyxJA">
+      The defining constraint of the next phase of AI will not be models,
+      algorithms, or compute alone, but <em data-page-node-id="DD56MjyWNDoEirphwPhQYe">the quality of the environments
+      in which AI learns.</em>
+    </blockquote>
+    <p class="statement-zh reveal" lang="zh-CN" data-page-node-id="gwhyBR3yeEJut0i0mAbE53">
+      下一阶段 AI 的主要瓶颈，将不只是模型、算法或算力，而是高质量的学习环境。
+    </p>
+  </div>
+</section>
+
+<!-- ── Mission ──────────────────────────────────────────── -->
+<section class="section bordered" id="mission" data-page-node-id="BkiEGUULMjEqsokz20nNTk">
+  <div class="container split" data-page-node-id="lxvTiKKx7MpyD7UXgLDKAR">
+    <div class="split-side reveal" data-page-node-id="bgRblPGrmCEmji6AISURDW">
+      <p class="label" data-page-node-id="qvXTXpBsrYEeg4v58M5U0f">Mission <span lang="zh-CN" data-page-node-id="nEAzdtgBFyE7Nk3YhaTALB">使命</span></p>
+    </div>
+    <div class="split-main" data-page-node-id="BbND4cAZzeGoAH66vqq4a3">
+      <p class="prose reveal" data-page-node-id="3CrP6XVUxXd0RRQef6oI2O">
+        We build environments where AI can <em data-page-node-id="yLG3SyXnoFKNn4edhFb9Bt">act</em>, <em data-page-node-id="RPTVcSYqHICEA37ANpWtsy">observe</em>,
+        <em data-page-node-id="GeYUgwGsHjA807E64QxByS">verify</em>, and <em data-page-node-id="oDqcOE4pPWkPHn0iQWUb6v">learn from experience</em> — enabling
+        intelligence to move beyond existing data and accelerate progress in
+        robotics, medicine, materials, and science.
+      </p>
+      <p class="prose-zh reveal" lang="zh-CN" data-page-node-id="ULnioUkjlmXJPl4KRZQ92s">
+        构建让 AI 能够行动、观察、验证并从经验中学习的环境，推动智能突破已有数据的边界，加速机器人、医学、材料与科学的进步。
+      </p>
+      <p class="prose-note reveal" data-page-node-id="sBjIrmgNU7gHrgUlEGmfrl">
+        Empiria Labs is not a data vendor and not a training platform. What we
+        build is the world in which experience can be earned.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ── Approach: the loop ───────────────────────────────── -->
+<section class="section bordered alt" id="approach" data-page-node-id="21mnGTIGQz7xd63hLzncsy">
+  <div class="container" data-page-node-id="jbV9JkMRmwbJjtgT4kfVmQ">
+    <div class="section-head reveal" data-page-node-id="sV20lyqqp881lJdWb5CkZr">
+      <p class="label" data-page-node-id="dmKIP7whGKBE977Nm05quF">Approach <span lang="zh-CN" data-page-node-id="5AAeEYDDlDEFfXSPjATWsc">方法</span></p>
+      <h2 class="section-title" data-page-node-id="sWUCsSGwuY7oXE7kRogmkV">Experience is a loop,<br data-page-node-id="ZwGj6qVXMGmFLRobqs5vId"><em data-page-node-id="vdqCLBSX4IjBufhtzdAyU4">not a dataset.</em></h2>
+    </div>
+
+    <!-- The rail and the nodes are laid out by the same grid as the labels,
+         so they stay aligned at every width instead of relying on an SVG
+         whose coordinates would drift. -->
+    <!-- One beat per stage. The four stages fire in sequence, the return
+         path lights on the last beat and Act fires again — seeing it come
+         back around is what makes the loop read as a loop. -->
+    <div class="loop reveal">
+      <div class="loop-rail" aria-hidden="true"></div>
+      <ol class="loop-steps">
+        <li style="--i:0"><span class="node" aria-hidden="true"></span><span class="loop-idx">01</span><h3>Act</h3><p lang="zh-CN">行动</p></li>
+        <li style="--i:1"><span class="node" aria-hidden="true"></span><span class="loop-idx">02</span><h3>Observe</h3><p lang="zh-CN">观察</p></li>
+        <li style="--i:2"><span class="node" aria-hidden="true"></span><span class="loop-idx">03</span><h3>Verify</h3><p lang="zh-CN">验证</p></li>
+        <li style="--i:3"><span class="node" aria-hidden="true"></span><span class="loop-idx">04</span><h3>Learn</h3><p lang="zh-CN">学习</p></li>
+      </ol>
+      <div class="loop-return" aria-hidden="true"><i></i></div>
+    </div>
+
+    <p class="loop-note reveal" data-page-node-id="AabE0Q6iKI3AJaBZ8U1xuS">
+      Only when a system can take an action, observe its consequence, receive
+      feedback and verify the outcome can it push past the boundary of what is
+      already known — and turn that into capability it can actually use.
+    </p>
+  </div>
+</section>
+
+<!-- ── Stack: the loop as infrastructure ────────────────────
+     Sits between Approach and Environments on purpose. Approach states
+     the loop as a principle; the inventory below names the worlds. This
+     is the layer in between — what an Empiria environment actually
+     ships as, stage by stage.
+
+     The right-hand slot of each card names the loop step that stage
+     serves, so the two sections read as one argument at two altitudes
+     instead of the same four boxes twice. That slot is why the
+     reference layout's decorative "/01" is gone: the index is already
+     on the left, so the space was repeating itself.
+
+     Every diagram is inline SVG with no hard-coded colour — the palette
+     lives in .sv-* classes so the whole set retones from the tokens. -->
+<section class="section bordered" id="stack">
+  <div class="container">
+    <div class="section-head reveal">
+      <p class="label">Stack <span lang="zh-CN">技术栈</span></p>
+      <h2 class="section-title">Four stages,<br><em>one loop.</em></h2>
+      <p class="section-lead">
+        Roll out in a sandbox, record it under one schema, check the outcome
+        against the world, then train on it — inside the same environment the
+        evaluation runs in.
+      </p>
+    </div>
+
+    <div class="stage-grid">
+
+      <article class="stage reveal">
+        <header>
+          <span class="stage-idx">01 · Sandbox</span>
+          <span class="stage-loop">Act</span>
+        </header>
+        <div class="stage-visual">
+          <svg viewBox="0 0 351 136" fill="none" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+            <path class="sv-grid" d="M0 34h351M0 68h351M0 102h351M88 0v136M176 0v136M264 0v136"/>
+            <rect class="sv-line" x="14" y="16" width="323" height="104" rx="3"/>
+            <g class="sv-line">
+              <rect x="22" y="26" width="48" height="24" rx="2"/><rect x="74" y="26" width="48" height="24" rx="2"/>
+              <rect x="126" y="26" width="48" height="24" rx="2"/><rect x="178" y="26" width="48" height="24" rx="2"/>
+              <rect x="230" y="26" width="48" height="24" rx="2"/><rect x="282" y="26" width="47" height="24" rx="2"/>
+              <rect x="22" y="55" width="48" height="24" rx="2"/><rect x="74" y="55" width="48" height="24" rx="2"/>
+              <rect x="126" y="55" width="48" height="24" rx="2"/><rect x="178" y="55" width="48" height="24" rx="2"/>
+              <rect x="230" y="55" width="48" height="24" rx="2"/><rect x="282" y="55" width="47" height="24" rx="2"/>
+              <rect x="22" y="84" width="48" height="24" rx="2"/><rect x="74" y="84" width="48" height="24" rx="2"/>
+              <rect x="126" y="84" width="48" height="24" rx="2"/><rect x="178" y="84" width="48" height="24" rx="2"/>
+              <rect x="230" y="84" width="48" height="24" rx="2"/><rect x="282" y="84" width="47" height="24" rx="2"/>
+            </g>
+            <g class="sv-hotw">
+              <rect x="74" y="26" width="48" height="24" rx="2"/><rect x="282" y="26" width="47" height="24" rx="2"/>
+              <rect x="178" y="55" width="48" height="24" rx="2"/><rect x="22" y="84" width="48" height="24" rx="2"/>
+            </g>
+            <path class="sv-tick" d="M92 37l3 3 6-6M300 37l3 3 6-6M196 66l3 3 6-6M40 95l3 3 6-6"/>
+          </svg>
+        </div>
+        <h3>Sandboxed worlds</h3>
+        <p>
+          Container-based environments rather than a virtual machine per task.
+          Many pack onto one host and roll out in parallel, so an agent can act
+          at scale instead of one episode at a time.
+        </p>
+        <hr class="stage-rule">
+        <p class="stage-foot">Environments — 24 in build</p>
+      </article>
+
+      <article class="stage reveal">
+        <header>
+          <span class="stage-idx">02 · Traces</span>
+          <span class="stage-loop">Observe</span>
+        </header>
+        <div class="stage-visual">
+          <svg viewBox="0 0 351 136" fill="none" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+            <path class="sv-grid" d="M0 34h351M0 68h351M0 102h351M88 0v136M176 0v136M264 0v136"/>
+            <g class="sv-line">
+              <rect x="16" y="22" width="86" height="28" rx="2"/><rect x="16" y="54" width="86" height="28" rx="2"/>
+              <rect x="16" y="86" width="86" height="28" rx="2"/>
+            </g>
+            <g class="sv-fill">
+              <rect x="22" y="28" width="16" height="16" rx="1"/><rect x="22" y="60" width="16" height="16" rx="1"/>
+              <rect x="22" y="92" width="16" height="16" rx="1"/>
+            </g>
+            <g class="sv-fill2">
+              <rect x="44" y="31" width="40" height="4" rx="2"/><rect x="44" y="39" width="28" height="4" rx="2"/>
+              <rect x="44" y="63" width="34" height="4" rx="2"/><rect x="44" y="71" width="44" height="4" rx="2"/>
+              <rect x="44" y="95" width="46" height="4" rx="2"/><rect x="44" y="103" width="24" height="4" rx="2"/>
+            </g>
+            <path class="sv-hot" d="M110 68h32M137 62l7 6-7 6"/>
+            <rect class="sv-line" x="158" y="22" width="90" height="92" rx="3"/>
+            <rect class="sv-hotf" x="158" y="22" width="90" height="14" rx="2" opacity=".55"/>
+            <g class="sv-fill">
+              <rect x="166" y="46" width="72" height="4" rx="2"/><rect x="166" y="58" width="54" height="4" rx="2"/>
+              <rect x="166" y="70" width="66" height="4" rx="2"/><rect x="166" y="82" width="42" height="4" rx="2"/>
+              <rect x="166" y="94" width="60" height="4" rx="2"/><rect x="166" y="106" width="36" height="4" rx="2"/>
+            </g>
+            <path class="sv-hot" d="M256 68h32M283 62l7 6-7 6" opacity=".55"/>
+            <rect class="sv-line2" x="302" y="51" width="34" height="34" rx="3"/>
+            <path class="sv-hot" d="M310 68h18M319 59v18"/>
+          </svg>
+        </div>
+        <h3>One trace schema</h3>
+        <p>
+          Every rollout lands as an observation paired with the action taken —
+          a single step or a whole trajectory — in one format shared across
+          both tracks.
+        </p>
+        <hr class="stage-rule">
+        <p class="stage-foot">Schema — two tracks, one format</p>
+      </article>
+
+      <article class="stage reveal">
+        <header>
+          <span class="stage-idx">03 · Verification</span>
+          <span class="stage-loop">Verify</span>
+        </header>
+        <div class="stage-visual">
+          <svg viewBox="0 0 351 136" fill="none" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+            <path class="sv-grid" d="M0 34h351M0 68h351M0 102h351M88 0v136M176 0v136M264 0v136"/>
+            <g class="sv-fill2">
+              <rect x="18" y="14" width="40" height="4" rx="2"/><rect x="100" y="14" width="32" height="4" rx="2"/>
+              <rect x="182" y="14" width="36" height="4" rx="2"/><rect x="264" y="14" width="28" height="4" rx="2"/>
+            </g>
+            <g class="sv-line">
+              <rect x="18" y="28" width="68" height="12" rx="2"/><rect x="100" y="28" width="68" height="12" rx="2"/>
+              <rect x="182" y="28" width="68" height="12" rx="2"/><rect x="264" y="28" width="68" height="12" rx="2"/>
+              <rect x="18" y="46" width="68" height="12" rx="2"/><rect x="100" y="46" width="68" height="12" rx="2"/>
+              <rect x="182" y="46" width="68" height="12" rx="2"/><rect x="264" y="46" width="68" height="12" rx="2"/>
+              <rect x="18" y="64" width="68" height="12" rx="2"/><rect x="100" y="64" width="68" height="12" rx="2"/>
+              <rect x="182" y="64" width="68" height="12" rx="2"/><rect x="264" y="64" width="68" height="12" rx="2"/>
+              <rect x="18" y="82" width="68" height="12" rx="2"/><rect x="100" y="82" width="68" height="12" rx="2"/>
+              <rect x="182" y="82" width="68" height="12" rx="2"/><rect x="264" y="82" width="68" height="12" rx="2"/>
+            </g>
+            <g class="sv-hotf" opacity=".88">
+              <rect x="18" y="28" width="26" height="12" rx="2"/><rect x="100" y="46" width="44" height="12" rx="2"/>
+              <rect x="182" y="64" width="18" height="12" rx="2"/><rect x="264" y="82" width="52" height="12" rx="2"/>
+            </g>
+            <rect class="sv-bar" x="18" y="106" width="314" height="9" rx="2"/>
+            <rect class="sv-hotf" x="18" y="106" width="176" height="9" rx="2" opacity=".7"/>
+            <path class="sv-line2" d="M194 101v19M254 103v15M314 103v15"/>
+          </svg>
+        </div>
+        <h3>Checkable outcomes</h3>
+        <p>
+          No environment ships without a programmatic check. The reward is
+          computed from the state of the world after the act, not inferred
+          from reading the transcript.
+        </p>
+        <hr class="stage-rule">
+        <p class="stage-foot">Measurement — outcome-verified</p>
+      </article>
+
+      <article class="stage reveal">
+        <header>
+          <span class="stage-idx">04 · Training</span>
+          <span class="stage-loop">Learn</span>
+        </header>
+        <div class="stage-visual">
+          <svg viewBox="0 0 351 136" fill="none" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+            <path class="sv-grid" d="M0 34h351M0 68h351M0 102h351M88 0v136M176 0v136M264 0v136"/>
+            <g class="sv-line">
+              <rect x="16" y="40" width="72" height="34" rx="3"/><rect x="264" y="40" width="70" height="34" rx="3"/>
+            </g>
+            <rect class="sv-hotw" x="140" y="32" width="78" height="50" rx="3"/>
+            <g class="sv-fill2">
+              <rect x="24" y="50" width="52" height="4" rx="2"/><rect x="24" y="59" width="38" height="4" rx="2"/>
+              <rect x="272" y="50" width="50" height="4" rx="2"/><rect x="272" y="59" width="34" height="4" rx="2"/>
+            </g>
+            <g class="sv-hotf" opacity=".88">
+              <rect x="152" y="45" width="54" height="4" rx="2"/><rect x="152" y="55" width="36" height="4" rx="2"/>
+              <rect x="152" y="65" width="46" height="4" rx="2"/>
+            </g>
+            <path class="sv-hot" d="M88 57h42M124 52l7 5-7 5"/>
+            <path class="sv-hot" d="M218 57h38M250 52l7 5-7 5"/>
+            <!-- the return leg is the only animated stroke on the page here:
+                 a dashed flow is what makes this read as closed, not as a
+                 pipeline that happens to bend back -->
+            <path class="sv-flow" d="M299 74V108H179V90"/>
+            <path class="sv-hot" d="M174 96l5-6 5 6" opacity=".8"/>
+            <circle class="sv-hotf sv-pulse" cx="239" cy="108" r="4"/>
+          </svg>
+        </div>
+        <h3>Learning in-world</h3>
+        <p>
+          Fine-tune on the traces, then reinforce inside the very environments
+          the evaluation runs in — so a gain measured here is a gain the agent
+          actually earned.
+        </p>
+        <hr class="stage-rule">
+        <p class="stage-foot">Training — any open agent</p>
+      </article>
+
+    </div>
+  </div>
+</section>
+
+<!-- ── Environments ─────────────────────────────────────── -->
+<section class="section bordered" id="environments">
+  <div class="container">
+    <div class="section-head reveal">
+      <p class="label">Environments <span lang="zh-CN">环境</span></p>
+      <h2 class="section-title">The first environments<br><em>we are building.</em></h2>
+      <p class="section-lead">
+        Two tracks, twenty-four task environments. Each one is a place where an
+        agent can act and where the outcome can be checked.
+      </p>
+    </div>
+
+    <div class="tracks">
+      <section class="track reveal">
+        <header class="track-head">
+          <p class="track-idx">Track 01</p>
+          <h3>Agentic Coding<em lang="zh-CN">智能编程</em></h3>
+          <p class="track-meta"><span class="count">13</span> environments <span class="chip">In build</span></p>
+        </header>
+        <ol class="env-list">
+          <li><span class="env-n">01</span><span class="env-name">SWE-bench Multilingual</span></li>
+          <li><span class="env-n">02</span><span class="env-name">SWE-bench Pro</span></li>
+          <li><span class="env-n">03</span><span class="env-name">DeepSWE</span></li>
+          <li><span class="env-n">04</span><span class="env-name">SWE Atlas <span class="env-q">Codebase Q&amp;A</span></span></li>
+          <li><span class="env-n">05</span><span class="env-name">SWE Atlas <span class="env-q">Test Writing</span></span></li>
+          <li><span class="env-n">06</span><span class="env-name">SWE Atlas <span class="env-q">Refactoring</span></span></li>
+          <li><span class="env-n">07</span><span class="env-name">SWE-Marathon</span></li>
+          <li><span class="env-n">08</span><span class="env-name">Terminal-Bench <span class="env-q">2.1</span></span></li>
+          <li><span class="env-n">09</span><span class="env-name">NL2Repo-Bench</span></li>
+          <li><span class="env-n">10</span><span class="env-name">CyberGym</span></li>
+          <li><span class="env-n">11</span><span class="env-name">ProgramBench</span></li>
+          <li><span class="env-n">12</span><span class="env-name">PostTrainBench <span class="env-q">V1.1</span></span></li>
+          <li><span class="env-n">13</span><span class="env-name">Harbor-Index</span></li>
+        </ol>
+      </section>
+
+      <section class="track reveal">
+        <header class="track-head">
+          <p class="track-idx">Track 02</p>
+          <h3>Working Agent<em lang="zh-CN">工作智能体</em></h3>
+          <p class="track-meta"><span class="count">11</span> environments <span class="chip">In build</span></p>
+        </header>
+        <ol class="env-list">
+          <li><span class="env-n">01</span><span class="env-name">OfficeQA Pro</span></li>
+          <li><span class="env-n">02</span><span class="env-name">MCP-Atlas <span class="env-q">public</span></span></li>
+          <li><span class="env-n">03</span><span class="env-name">Toolathlon-Verified</span></li>
+          <li><span class="env-n">04</span><span class="env-name">APEX-Agents <span class="env-q">pass@1</span></span></li>
+          <li><span class="env-n">05</span><span class="env-name">SkillsBench <span class="env-q">79, text-only</span></span></li>
+          <li><span class="env-n">06</span><span class="env-name">JobBench</span></li>
+          <li><span class="env-n">07</span><span class="env-name">WorkspaceBench</span></li>
+          <li><span class="env-n">08</span><span class="env-name">Agents&rsquo; Last Exam <span class="env-q">ALE-CLI</span></span></li>
+          <li><span class="env-n">09</span><span class="env-name">GDPval-AA V2 <span class="env-q">Elo, official</span></span></li>
+          <li><span class="env-n">10</span><span class="env-name">AutomationBench <span class="env-q">v1.0.6</span></span></li>
+          <li><span class="env-n">11</span><span class="env-name">BankerToolBench</span></li>
+        </ol>
+      </section>
+    </div>
+  </div>
+</section>
+
+<!-- ── Vision ───────────────────────────────────────────── -->
+<section class="section bordered alt belief" id="vision" data-page-node-id="IheN8RKBbQGiEqGB0t1ehl">
+  <div class="container" data-page-node-id="UqvleJI0EguKwDfUfICFHg">
+    <p class="label reveal" data-page-node-id="kPqpyj7wMmTdeEywBCyqqB">Vision <span lang="zh-CN" data-page-node-id="MT1PMkchRG1o6qBuLug2U8">愿景</span></p>
+    <blockquote class="statement reveal" data-page-node-id="tfy9ZoQoHhmMwOdC3ysGBd">
+      To enable AI not only to learn from what humanity has already recorded,
+      but also to <em data-page-node-id="x18g00u5YeCXpT2SXFHdcD">discover new knowledge</em> through interaction with
+      digital and physical worlds.
+    </blockquote>
+    <p class="statement-zh reveal" lang="zh-CN" data-page-node-id="zkpWXm211aaMShLHO7nFWp">
+      让 AI 不仅学习人类已经记录的知识，也能够通过与数字世界和物理世界互动，发现新的知识。
+    </p>
+  </div>
+</section>
+
+<!-- ── Closing ──────────────────────────────────────────── -->
+<section class="section bordered closing" id="contact" data-page-node-id="esqEgPgo11TvlFeA6B0bZw">
+  <div class="container" data-page-node-id="cUyH0w66AAU7UAXGGmVkCF">
+    <p class="label reveal" data-page-node-id="CQmw8Ri4H0cInohftVOYUf">Get in touch <span lang="zh-CN" data-page-node-id="ZqGIBouAaOJLvZxJeshpi6">联系</span></p>
+    <h2 class="closing-title reveal" data-page-node-id="0Og9OiuHKgUU57hDhfEXnp">
+      Intelligence through<br data-page-node-id="4hcMl7fbICi2ldbKKYDwG9"><em data-page-node-id="Shggn2t6LgpFAXG1XImjKS">interaction.</em>
+    </h2>
+    <p class="closing-zh reveal" lang="zh-CN" data-page-node-id="BC5DdggoR3GCaY6MGuFZDg">智能源于互动。</p>
+    <div class="closing-cta reveal" data-page-node-id="898IceuZegQZevLTPDgOnd">
+      <a class="btn btn-solid" href="mailto:jbniu25@stu.pku.edu.cn">jbniu25@stu.pku.edu.cn</a>
+      <a class="btn btn-quiet" href="https://github.com/EmpiriaAI" target="_blank" rel="noopener">GitHub</a>
+    </div>
+  </div>
+</section>
+
+<!-- ── Footer ───────────────────────────────────────────── -->
+<footer class="site-foot reveal" data-page-node-id="Iwn7UFOEAqogxwStj4rhaa">
+  <div class="wordmark" aria-hidden="true" data-page-node-id="PpliSRtxOOt9NCXW0NoCJK"><span data-page-node-id="YOCUpKOmlHZZbT4K0E9EJH">EMPIRIA</span></div>
+  <div class="container foot-bar" data-page-node-id="0G2SLqsW33bOHRsGnras4l">
+    <p data-page-node-id="LWUd3kqfgoTLE5RjKitHZ6">Empiria Labs &nbsp;·&nbsp; 2026</p>
+    <p class="foot-line" data-page-node-id="Ud4X9osQA0HOAV0X9xKKIB">Build the world AI learns from.</p>
+  </div>
+</footer>
+
+<script src="script.js"></script>
+</body>
+</html>
