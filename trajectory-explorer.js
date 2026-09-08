@@ -1,7 +1,7 @@
 (function () {
   'use strict';
 
-  var trajectories = window.EMPIRIA_RAW_TRAJECTORIES || [];
+  var trajectories = (window.EMPIRIA_RAW_TRAJECTORIES || []).concat(window.EMPIRIA_FEEDBACK_SNAPSHOTS || []);
   if (!trajectories.length) return;
 
   var selectedIndex = 0;
@@ -79,9 +79,13 @@
     return value && value.length ? value.join(' · ') : 'None';
   }
 
+  function optionalNumber(value) {
+    return value == null ? 'Not reported' : number(value);
+  }
+
   function highQualityNodeMap(trajectory) {
     var source = window.EMPIRIA_FEEDBACK_PIPELINE || {};
-    var detail = source.trajectories && source.trajectories[trajectory.id];
+    var detail = trajectory.pipelineDetail || source.trajectories && source.trajectories[trajectory.id];
     var map = {};
     if (!detail) return map;
     (detail.segments || []).forEach(function (segment) {
@@ -102,6 +106,12 @@
     return { successful: successful, label: successful ? 'Successful' : 'Error' };
   }
 
+  function trajectorySourceLabel(trajectory) {
+    if (trajectory.trajectoryClass === 'feedback') return 'Feedback';
+    if (trajectory.trajectoryClass === 'swe') return 'SWE';
+    return titleCase(trajectory.trajectoryClass);
+  }
+
   function categoryItems(category) {
     return trajectories.filter(function (trajectory) { return trajectory.trajectoryClass === category; });
   }
@@ -114,13 +124,48 @@
     return trajectories[selectedIndex];
   }
 
+  function loadTrajectoryEvents(trajectory) {
+    if (Array.isArray(trajectory.events)) return Promise.resolve(trajectory);
+    if (!trajectory.lazyData) return Promise.reject(new Error('Trajectory data source is missing'));
+    if (trajectory.loadingPromise) return trajectory.loadingPromise;
+    trajectory.loadingPromise = fetch(trajectory.lazyData).then(function (response) {
+      if (!response.ok) throw new Error('Unable to load trajectory data (' + response.status + ')');
+      return response.json();
+    }).then(function (payload) {
+      trajectory.events = payload.events || [];
+      return trajectory;
+    }).finally(function () {
+      trajectory.loadingPromise = null;
+    });
+    return trajectory.loadingPromise;
+  }
+
   function setSelectedById(id) {
     var index = trajectories.findIndex(function (trajectory) { return trajectory.id === id; });
     if (index < 0) return;
     selectedIndex = index;
     activeCategory = trajectories[index].trajectoryClass;
     highQualityOnly = false;
-    renderAll();
+    var trajectory = trajectories[index];
+    if (Array.isArray(trajectory.events)) {
+      renderAll();
+    } else {
+      renderCategoryNav(); renderSidebar();
+      elements.runView.hidden = false; elements.categoryEmpty.hidden = true;
+      renderHeader(trajectory); renderMetrics(trajectory); renderPipelineDetails(trajectory); renderEnvironment(trajectory);
+      renderTaskAndVerification(trajectory); renderTokens(trajectory); updateFilterCounts(trajectory);
+      elements.search.value = '';
+      elements.timeline.innerHTML = '<p class="trajectory-loading">Loading full trajectory…</p>';
+      elements.empty.hidden = true;
+      text('visibleCount', '0'); text('eventCount', 'of ' + number(trajectory.eventCount) + ' events'); text('timelineStatus', 'Loading');
+      loadTrajectoryEvents(trajectory).then(function () {
+        if (selectedTrajectory() === trajectory) renderTimeline();
+      }).catch(function (error) {
+        if (selectedTrajectory() !== trajectory) return;
+        elements.timeline.innerHTML = '<p class="trajectory-load-error">' + error.message + '</p>';
+        text('timelineStatus', 'Load error');
+      });
+    }
     if (window.innerWidth <= 820) elements.sidebar.classList.remove('open');
   }
 
@@ -162,7 +207,9 @@
         var status = trajectoryStatus(trajectory);
         if (status.successful && !allowSuccess) return false;
         if (!status.successful && !allowFailed) return false;
-        var haystack = [trajectory.title, trajectory.id, trajectory.shortId, trajectory.environment && trajectory.environment.repository, trajectory.environment && trajectory.environment.task].join(' ').toLowerCase();
+        var haystack = [trajectory.title, trajectory.id, trajectory.shortId, trajectory.snapshotLabel, trajectory.taskType,
+          trajectory.environment && trajectory.environment.repository, trajectory.environment && trajectory.environment.task,
+          trajectory.environment && trajectory.environment.taskSummary].join(' ').toLowerCase();
         return !query || haystack.indexOf(query) !== -1;
       });
 
@@ -173,18 +220,21 @@
         list.appendChild(none);
       }
 
-      items.forEach(function (trajectory) {
+      function appendRun(trajectory) {
         visibleRuns += 1;
         var status = trajectoryStatus(trajectory);
         var button = document.createElement('button');
         button.type = 'button';
         button.className = 'sidebar-run';
         button.setAttribute('aria-pressed', String(trajectory === selectedTrajectory()));
+        var runDescriptor = [trajectory.shortId, trajectory.snapshotLabel, trajectory.model || 'unknown model'].filter(Boolean).join(' · ');
         button.innerHTML = '<span class="sidebar-run-status ' + (status.successful ? 'success' : 'error') + '"></span>' +
-          '<span class="sidebar-run-copy"><strong>' + trajectory.title + '</strong><small>' + trajectory.shortId + ' · ' + (trajectory.model || 'unknown model') + '</small></span>';
+          '<span class="sidebar-run-copy"><strong>' + trajectory.title + '</strong><small>' + runDescriptor + '</small></span>';
         button.addEventListener('click', function () { setSelectedById(trajectory.id); });
         list.appendChild(button);
-      });
+      }
+
+      items.forEach(appendRun);
       section.appendChild(list);
       elements.sidebarGroups.appendChild(section);
     });
@@ -208,13 +258,13 @@
   function renderHeader(trajectory) {
     var env = trajectory.environment || {};
     var status = trajectoryStatus(trajectory);
-    text('runBreadcrumb', titleCase(trajectory.trajectoryClass) + ' / ' + trajectory.shortId);
+    text('runBreadcrumb', trajectorySourceLabel(trajectory) + ' / ' + trajectory.shortId);
     text('trajectoryName', trajectory.title);
     text('runSubtitle', env.issue || env.taskName || trajectory.taskType || 'Agent trajectory');
     var badge = document.getElementById('trajectoryResult');
     badge.textContent = status.label;
     badge.className = 'run-status ' + (status.successful ? 'success' : 'error');
-    var meta = [trajectory.model, trajectory.agent || env.agent, trajectory.dataSource, trajectory.id].filter(Boolean);
+    var meta = [trajectory.model, trajectory.agent || env.agent, trajectory.dataSource, trajectory.snapshotLabel, trajectory.id].filter(Boolean);
     document.getElementById('runMetaLine').textContent = meta.join(' · ');
   }
 
@@ -230,7 +280,7 @@
     text('metricOutcomeLabel', trajectory.trajectoryClass === 'swe' ? 'Verification' : 'Outcome');
     text('metricReward', trajectory.trajectoryClass === 'swe' ? env.reward : trajectory.valueTier);
     text('metricDuration', env.duration != null ? duration(env.duration) : '—');
-    text('metricSteps', trajectory.trajectoryClass === 'swe' ? agentSteps : counts.thinking);
+    text('metricSteps', trajectory.agentStepCount != null ? trajectory.agentStepCount : counts.thinking);
     text('metricTools', number(trajectory.toolCallCount));
     text('metricTokens', number(tokens.total));
     text('metricVerification', trajectory.trajectoryClass === 'swe' ? env.tests : titleCase(trajectory.situation));
@@ -245,12 +295,14 @@
         ['Benchmark', env.benchmark], ['Task', env.task], ['Repository', env.repository], ['Base commit', env.baseCommit],
         ['Version', env.version], ['Difficulty', env.difficulty], ['Runtime', env.runtime], ['OS / architecture', [env.os, env.architecture].filter(Boolean).join(' · ')], ['Image', env.image],
         ['Workspace', env.workdir], ['Resources', [env.cpu, env.memory, env.storage].filter(Boolean).join(' · ')],
-        ['Internet', env.internet], ['Agent', env.agent], ['Model', env.model], ['Verifier', env.verifier]
+        ['Internet', env.internet], ['Agent', env.agent], ['Model', env.model], ['Service tier', env.serviceTier], ['Verifier', env.verifier]
       ];
     } else {
       facts = [
-        ['Family', env.family], ['Source file', env.sourceFile], ['Runtime', env.runtime], ['Model', env.model],
-        ['Verifier', env.verifier], ['Report', env.report], ['Data source', trajectory.dataSource], ['Conversation ID', trajectory.id]
+      ['Family', env.family], ['Source file', env.sourceFile], ['Snapshot', env.snapshot], ['Runtime', env.runtime], ['Model', env.model],
+      ['Service tier', env.serviceTier], ['Request ID', env.requestId],
+        ['Verifier', env.verifier], ['Report', env.report], ['Data source', trajectory.dataSource],
+        ['Conversation ID', env.conversationId || trajectory.conversationId || trajectory.id], ['Run ID', trajectory.snapshotLabel ? trajectory.id : null]
       ];
     }
     appendFacts(elements.environmentGrid, facts);
@@ -289,7 +341,7 @@
     ] : [
       ['Outcome', titleCase(trajectory.situation), trajectoryStatus(trajectory).successful ? 'success-text' : 'error-text'],
       ['Value tier', trajectory.valueTier], ['Error rate', trajectory.errorRate == null ? '—' : (trajectory.errorRate * 100).toFixed(1) + '%'],
-      ['Tool calls', number(trajectory.toolCallCount)], ['Events', number(trajectory.events.length)], ['Report', env.report]
+      ['Tool calls', number(trajectory.toolCallCount)], ['Events', number(Array.isArray(trajectory.events) ? trajectory.events.length : trajectory.eventCount)], ['Report', env.report]
     ]);
   }
 
@@ -310,7 +362,7 @@
 
   function renderPipelineDetails(trajectory) {
     var source = window.EMPIRIA_FEEDBACK_PIPELINE || {};
-    var detail = source.trajectories && source.trajectories[trajectory.id];
+    var detail = trajectory.pipelineDetail || source.trajectories && source.trajectories[trajectory.id];
     if (trajectory.trajectoryClass !== 'feedback' || !detail) {
       elements.pipelinePanel.hidden = true;
       elements.pipelinePanel.open = false;
@@ -324,9 +376,10 @@
     var difficulty = detail.difficulty || {};
     var segmentSummary = detail.segmentSummary || {};
     var thinking = detail.thinkingClean || {};
-    var dataset = source.dataset || {};
+    var dataset = detail.dataset || source.dataset || {};
 
     elements.pipelinePanel.hidden = false;
+    text('pipelineSourceLabel', 'Feedback metadata');
     text('pipelineSummaryStatus', (clean.passed ? 'Clean pass' : 'Rejected') + ' · ' + titleCase(classification.situation));
 
     appendFacts(elements.pipelineCleanFacts, [
@@ -409,12 +462,13 @@
     });
 
     appendFacts(elements.pipelineThinkingFacts, [
-      ['Category', thinking.category], ['With thinking', number(thinking.withThinking)],
-      ['Dropped', number(thinking.dropped)], ['Near duplicates', number(thinking.nearDuplicates)]
+      ['Status', thinking.status], ['Category', thinking.category], ['With thinking', number(thinking.withThinking)],
+      ['Dropped', optionalNumber(thinking.dropped)], ['Near duplicates', optionalNumber(thinking.nearDuplicates)]
     ]);
 
     appendFacts(elements.pipelineDatasetFacts, [
       ['Source file', dataset.sourceFile], ['Trajectories', number(dataset.trajectoryCount)],
+      ['Unique conversations', number(dataset.uniqueConversations)],
       ['Tool calls', number(dataset.toolCallCount)], ['Estimated tokens', number(dataset.estimatedTokens)],
       ['Tool-call range', number(dataset.minToolCalls) + '–' + number(dataset.maxToolCalls)],
       ['Estimated-token range', number(dataset.minEstimatedTokens) + '–' + number(dataset.maxEstimatedTokens)],
@@ -425,6 +479,18 @@
 
   function renderTokens(trajectory) {
     var tokens = trajectory.tokenUsage || { cachedInput: 0, uncachedInput: 0, output: 0, total: 0 };
+    if (trajectory.tokenUsageEstimated) {
+      text('tokenPanelKicker', 'Estimated usage');
+      text('tokenTotal', number(tokens.total)); text('tokenCached', 'Not reported');
+      text('tokenUncached', 'Not reported'); text('tokenOutput', 'Not reported');
+      text('tokenCachedPct', '—'); text('tokenUncachedPct', '—'); text('tokenOutputPct', '—');
+      document.getElementById('tokenCachedBar').style.width = '0';
+      document.getElementById('tokenUncachedBar').style.width = '0';
+      document.getElementById('tokenOutputBar').style.width = '0';
+      text('tokenUsageNote', 'Estimated from cleaned trajectory text; no API usage record was available.');
+      return;
+    }
+    text('tokenPanelKicker', 'Usage');
     var total = tokens.total || 1;
     text('tokenTotal', number(tokens.total)); text('tokenCached', number(tokens.cachedInput));
     text('tokenUncached', number(tokens.uncachedInput)); text('tokenOutput', number(tokens.output));
@@ -434,6 +500,13 @@
     document.getElementById('tokenCachedBar').style.width = tokens.cachedInput / total * 100 + '%';
     document.getElementById('tokenUncachedBar').style.width = tokens.uncachedInput / total * 100 + '%';
     document.getElementById('tokenOutputBar').style.width = tokens.output / total * 100 + '%';
+    var note = [];
+    if (tokens.source) note.push('Real API usage matched by request_id');
+    if (tokens.promptTokens != null) note.push('Prompt ' + number(tokens.promptTokens));
+    if (tokens.cacheWrite != null) note.push('Cache write ' + number(tokens.cacheWrite));
+    if (tokens.rawInput != null) note.push('Raw uncached ' + number(tokens.rawInput));
+    if (tokens.serviceTier) note.push('Tier ' + tokens.serviceTier);
+    text('tokenUsageNote', note.join(' · '));
   }
 
   function truncate(value, length) {
@@ -446,8 +519,8 @@
     return event.type === 'tool_result' ? event.type + ' status-' + (event.status || 'success') : event.type;
   }
 
-  function createEvent(event, index) {
-    var quality = highQualityNodeMap(selectedTrajectory())[event.sourceIndex];
+  function createEvent(event, index, qualityMap) {
+    var quality = qualityMap[event.sourceIndex];
     var item = document.createElement('article');
     item.className = 'raw-event ' + classify(event);
     item.id = 'trajectory-event-' + index;
@@ -504,7 +577,7 @@
       button.querySelector('b').textContent = number(count);
     });
     var source = window.EMPIRIA_FEEDBACK_PIPELINE || {};
-    var detail = source.trajectories && source.trajectories[trajectory.id];
+    var detail = trajectory.pipelineDetail || source.trajectories && source.trajectories[trajectory.id];
     var nodeSet = new Set();
     if (detail) (detail.segments || []).forEach(function (segment) {
       if (segment.label === 'high_quality') (segment.nodes || []).forEach(function (node) { nodeSet.add(node); });
@@ -516,6 +589,7 @@
 
   function renderTimeline() {
     var trajectory = selectedTrajectory();
+    if (!Array.isArray(trajectory.events)) return;
     var qualityMap = highQualityNodeMap(trajectory);
     var query = elements.search.value.trim().toLowerCase();
     var fragment = document.createDocumentFragment(); var visible = 0;
@@ -524,7 +598,7 @@
       if (highQualityOnly && !qualityMap[event.sourceIndex]) return;
       var haystack = [event.type, event.title, event.summary, event.content, event.toolCallId].filter(Boolean).join('\n').toLowerCase();
       if (query && haystack.indexOf(query) === -1) return;
-      fragment.appendChild(createEvent(event, index)); visible += 1;
+      fragment.appendChild(createEvent(event, index, qualityMap)); visible += 1;
     });
     elements.timeline.textContent = ''; elements.timeline.appendChild(fragment); elements.empty.hidden = visible !== 0;
     text('visibleCount', number(visible)); text('eventCount', 'of ' + number(trajectory.events.length) + ' events'); text('timelineStatus', visible === trajectory.events.length ? 'All events' : visible + ' visible');

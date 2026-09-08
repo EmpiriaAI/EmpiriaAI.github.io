@@ -2069,6 +2069,8 @@ html.anim .rise {
   color: var(--ink-5);
 }
 .raw-empty { padding: 50px 0; text-align: center; color: var(--ink-4); }
+.trajectory-loading,.trajectory-load-error { padding: 54px 0; text-align: center; font-family: var(--f-mono); font-size: 10px; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-4); }
+.trajectory-load-error { color: var(--error-soft); }
 
 /* ── trajectory analytics product shell ────────────────── */
 .analytics-topbar {
@@ -2191,6 +2193,9 @@ html.anim .rise {
 .sidebar-group-heading[aria-pressed="true"] { color: var(--accent-soft); }
 .sidebar-group-heading b { font-weight: 500; color: var(--ink-5); }
 .sidebar-run-list { padding: 0 10px 10px; }
+.sidebar-subgroup-label { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 11px 10px 6px; font-family: var(--f-mono); font-size: 7.5px; letter-spacing: .07em; text-transform: uppercase; color: var(--ink-5); }
+.sidebar-subgroup-label + .sidebar-run { margin-top: 2px; }
+.sidebar-subgroup-label b { font-weight: 500; color: var(--ink-4); }
 .sidebar-run {
   width: 100%;
   display: grid;
@@ -2316,6 +2321,7 @@ html.anim .rise {
 .token-panel .token-composition { margin-top: 18px; height: 6px; }
 .token-panel .token-breakdown { margin-top: 14px; }
 .token-panel .token-breakdown small { display: block; margin-top: 4px; font-family: var(--f-mono); font-size: 8px; color: var(--ink-5); }
+.token-usage-note { margin-top: 13px; font-family: var(--f-mono); font-size: 8.5px; line-height: 1.55; letter-spacing: .035em; color: var(--ink-5); }
 
 .timeline-toolbar { position: sticky; top: 62px; z-index: 40; display: grid; grid-template-columns: auto minmax(220px,.7fr); gap: 12px 20px; margin-top: 16px; padding: 13px 16px; border: 1px solid var(--line-2); background: rgba(8,8,10,.95); backdrop-filter: blur(12px); }
 .timeline-toolbar-title { display: flex; align-items: baseline; gap: 8px; }

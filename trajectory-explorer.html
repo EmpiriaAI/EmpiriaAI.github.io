@@ -55,7 +55,7 @@
     </div>
     <div class="sidebar-footnote">
       <span id="sidebarRunCount">0 trajectories</span>
-      <small>Feedback records and environment trajectories use one common analysis surface.</small>
+      <small>Feedback records and environment trajectories share one analysis surface.</small>
     </div>
   </aside>
 
@@ -94,7 +94,7 @@
 
       <details class="analytics-panel pipeline-panel" id="pipelinePanel" hidden>
         <summary>
-          <span><small>Feedback metadata</small><strong>Pipeline details</strong></span>
+          <span><small id="pipelineSourceLabel">Feedback metadata</small><strong>Pipeline details</strong></span>
           <span class="pipeline-summary-status" id="pipelineSummaryStatus">Clean pass</span>
           <i aria-hidden="true">+</i>
         </summary>
@@ -160,7 +160,7 @@
 
       <section class="analytics-panel token-panel" aria-labelledby="tokenAccountingTitle">
         <header class="panel-heading token-panel-head">
-          <div><p>Usage</p><h2 id="tokenAccountingTitle">Token composition</h2></div>
+          <div><p id="tokenPanelKicker">Usage</p><h2 id="tokenAccountingTitle">Token composition</h2></div>
           <strong id="tokenTotal">0</strong>
         </header>
         <div class="token-composition" aria-hidden="true">
@@ -173,6 +173,7 @@
           <div><dt><i class="token-key uncached"></i>Uncached Input</dt><dd id="tokenUncached">0</dd><small id="tokenUncachedPct">0%</small></div>
           <div><dt><i class="token-key output"></i>Output</dt><dd id="tokenOutput">0</dd><small id="tokenOutputPct">0%</small></div>
         </dl>
+        <p class="token-usage-note" id="tokenUsageNote"></p>
       </section>
 
       <div class="timeline-toolbar" id="timelineToolbar">
@@ -211,6 +212,7 @@
 <script src="script.js"></script>
 <script src="trajectory-data.js"></script>
 <script src="feedback-pipeline-data.js"></script>
+<script src="feedback-snapshot-index.js"></script>
 <script src="trajectory-explorer.js"></script>
 </body>
 </html>
