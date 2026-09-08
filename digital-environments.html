@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Digital Environments — Empiria Labs</title>
+<meta name="description" content="Twenty-four digital task environments for agentic coding and working agents.">
+<meta name="theme-color" content="#08080A">
+<link rel="stylesheet" href="fonts.css">
+<link rel="preload" href="fonts/space-grotesk.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/inter-tight.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/jetbrains-mono.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="world" aria-hidden="true"><div class="world-grid"></div></div>
+
+<header class="site-head">
+  <div class="container head-inner">
+    <a class="brand" href="index.html#top">
+      <span class="brand-mark" aria-hidden="true">
+        <svg class="brand-cube-construct" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path class="brand-cube-outline" d="m32 5 25 14v27L32 59 7 46V19L32 5Z"/>
+          <path class="brand-cube-grid" d="m7 19 25 14 25-14M32 33v26"/>
+          <path class="brand-cube-top" d="m32 5 25 14-25 14L7 19 32 5Z"/>
+        </svg>
+      </span>
+      <span class="brand-name">Empiria&nbsp;Labs</span>
+    </a>
+    <nav class="site-nav" aria-label="Primary">
+      <a href="index.html#belief">Belief</a>
+      <a href="index.html#mission">Mission</a>
+      <a href="index.html#approach">Approach</a>
+      <a href="index.html#stack">Stack</a>
+      <a class="active" href="index.html#environments">Environments</a>
+      <a href="index.html#vision">Vision</a>
+    </nav>
+    <a class="head-cta" href="index.html#contact">Get in touch</a>
+    <button class="nav-toggle" id="navToggle" aria-label="Menu" aria-expanded="false"><span></span><span></span></button>
+  </div>
+</header>
+
+<main class="detail-main">
+  <section class="detail-hero">
+    <div class="container">
+      <a class="back-link" href="index.html#environments">All environments</a>
+      <p class="label detail-kicker">Environment 01</p>
+      <h1 class="detail-title">Digital<em>Environments.</em></h1>
+      <p class="detail-intro">
+        Low-cost actions, fast feedback, and programmatically verifiable outcomes.
+        Digital environments are where AI can already learn through direct interaction at scale.
+      </p>
+      <div class="detail-stats" aria-label="Digital environment summary">
+        <span class="detail-stat"><strong>24</strong> task environments</span>
+        <span class="detail-stat"><strong>2</strong> tracks</span>
+        <span class="detail-stat"><strong>✓</strong> programmatic verification</span>
+      </div>
+      <a class="trajectory-launch" href="trajectory-explorer.html">
+        <span class="trajectory-launch-copy">
+          <small>Interactive demo</small>
+          <strong>Explore an agent trajectory</strong>
+          <span>Follow observations, actions, tool calls, verification, and reward step by step.</span>
+        </span>
+        <span class="trajectory-launch-path" aria-hidden="true">
+          <i></i><i></i><i></i><i></i>
+        </span>
+        <span class="trajectory-launch-arrow" aria-hidden="true">→</span>
+      </a>
+      <nav class="track-jump" aria-label="Jump to a digital environment track">
+        <a href="#agentic-coding"><span>Track 01</span> Agentic Coding · 13</a>
+        <a href="#working-agent"><span>Track 02</span> Working Agent · 11</a>
+      </nav>
+    </div>
+  </section>
+
+  <section class="section detail-inventory">
+    <div class="container">
+      <div class="section-head">
+        <p class="label">Current inventory</p>
+        <h2 class="section-title">Twenty-four places<br><em>for agents to learn.</em></h2>
+        <p class="section-lead">
+          Two tracks: systems that work with code, and systems that work with tools.
+          Each task environment makes action possible and outcomes checkable.
+        </p>
+      </div>
+
+      <div class="tracks">
+        <section class="track" id="agentic-coding">
+          <header class="track-head">
+            <p class="track-idx">Track 01</p>
+            <h3>Agentic Coding</h3>
+            <p class="track-meta"><span class="count">13</span> environments <span class="chip">In build</span></p>
+          </header>
+          <ol class="env-list in-view">
+            <li><span class="env-n">01</span><span class="env-name">SWE-bench Multilingual</span></li>
+            <li><span class="env-n">02</span><span class="env-name">SWE-bench Pro</span></li>
+            <li><span class="env-n">03</span><span class="env-name">DeepSWE</span></li>
+            <li><span class="env-n">04</span><span class="env-name">SWE Atlas <span class="env-q">Codebase Q&amp;A</span></span></li>
+            <li><span class="env-n">05</span><span class="env-name">SWE Atlas <span class="env-q">Test Writing</span></span></li>
+            <li><span class="env-n">06</span><span class="env-name">SWE Atlas <span class="env-q">Refactoring</span></span></li>
+            <li><span class="env-n">07</span><span class="env-name">SWE-Marathon</span></li>
+            <li><span class="env-n">08</span><span class="env-name">Terminal-Bench <span class="env-q">2.1</span></span></li>
+            <li><span class="env-n">09</span><span class="env-name">NL2Repo-Bench</span></li>
+            <li><span class="env-n">10</span><span class="env-name">CyberGym</span></li>
+            <li><span class="env-n">11</span><span class="env-name">ProgramBench</span></li>
+            <li><span class="env-n">12</span><span class="env-name">PostTrainBench <span class="env-q">V1.1</span></span></li>
+            <li><span class="env-n">13</span><span class="env-name">Harbor-Index</span></li>
+          </ol>
+        </section>
+
+        <section class="track" id="working-agent">
+          <header class="track-head">
+            <p class="track-idx">Track 02</p>
+            <h3>Working Agent</h3>
+            <p class="track-meta"><span class="count">11</span> environments <span class="chip">In build</span></p>
+          </header>
+          <ol class="env-list in-view">
+            <li><span class="env-n">01</span><span class="env-name">OfficeQA Pro</span></li>
+            <li><span class="env-n">02</span><span class="env-name">MCP-Atlas <span class="env-q">public</span></span></li>
+            <li><span class="env-n">03</span><span class="env-name">Toolathlon-Verified</span></li>
+            <li><span class="env-n">04</span><span class="env-name">APEX-Agents <span class="env-q">pass@1</span></span></li>
+            <li><span class="env-n">05</span><span class="env-name">SkillsBench <span class="env-q">79, text-only</span></span></li>
+            <li><span class="env-n">06</span><span class="env-name">JobBench</span></li>
+            <li><span class="env-n">07</span><span class="env-name">WorkspaceBench</span></li>
+            <li><span class="env-n">08</span><span class="env-name">Agents&rsquo; Last Exam <span class="env-q">ALE-CLI</span></span></li>
+            <li><span class="env-n">09</span><span class="env-name">GDPval-AA V2 <span class="env-q">Elo, official</span></span></li>
+            <li><span class="env-n">10</span><span class="env-name">AutomationBench <span class="env-q">v1.0.6</span></span></li>
+            <li><span class="env-n">11</span><span class="env-name">BankerToolBench</span></li>
+          </ol>
+        </section>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-foot">
+  <div class="wordmark" aria-hidden="true"><span>EMPIRIA</span></div>
+  <div class="container foot-bar">
+    <p>Empiria Labs &nbsp;·&nbsp; 2026</p>
+    <p class="foot-line">Build the world AI learns from.</p>
+  </div>
+</footer>
+
+<script src="script.js"></script>
+</body>
+</html>

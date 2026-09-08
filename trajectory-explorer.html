@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Trajectory Explorer — Empiria Labs</title>
+<meta name="description" content="Explore complete agent message timelines with reasoning, tool calls, tool results, and final answers.">
+<meta name="theme-color" content="#08080A">
+<link rel="stylesheet" href="fonts.css">
+<link rel="preload" href="fonts/space-grotesk.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/inter-tight.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/jetbrains-mono.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="world" aria-hidden="true"><div class="world-grid"></div></div>
+
+<header class="analytics-topbar">
+  <div class="analytics-topbar-inner">
+    <a class="brand" href="index.html#top">
+      <span class="brand-mark" aria-hidden="true">
+        <svg class="brand-cube-construct" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path class="brand-cube-outline" d="m32 5 25 14v27L32 59 7 46V19L32 5Z"/>
+          <path class="brand-cube-grid" d="m7 19 25 14 25-14M32 33v26"/>
+          <path class="brand-cube-top" d="m32 5 25 14-25 14L7 19 32 5Z"/>
+        </svg>
+      </span>
+      <span class="brand-name">Empiria&nbsp;Labs</span>
+    </a>
+    <span class="analytics-product-name">Trajectory Analytics</span>
+    <nav class="analytics-category-nav" id="topCategoryNav" aria-label="Trajectory categories">
+      <button type="button" data-category="feedback" aria-pressed="true">Feedback</button>
+      <button type="button" data-category="swe" aria-pressed="false">SWE</button>
+      <button type="button" data-category="terminal" aria-pressed="false">Terminal-Bench</button>
+    </nav>
+    <a class="analytics-back-link" href="digital-environments.html">Digital environments →</a>
+  </div>
+</header>
+
+<main class="trajectory-main">
+  <aside class="analytics-sidebar" id="analyticsSidebar">
+    <div class="analytics-sidebar-head">
+      <p>Trajectory sources</p>
+      <button id="sidebarClose" type="button" aria-label="Close filters">×</button>
+    </div>
+    <label class="sidebar-search">
+      <span>Find run</span>
+      <input id="runSearch" type="search" placeholder="Task, ID, repository...">
+    </label>
+    <nav class="sidebar-groups" id="sidebarGroups" aria-label="Trajectory source groups"></nav>
+    <div class="sidebar-filter-section">
+      <p>Outcome</p>
+      <label><input type="checkbox" data-run-filter="successful" checked> Successful</label>
+      <label><input type="checkbox" data-run-filter="failed" checked> Failed / error</label>
+    </div>
+    <div class="sidebar-footnote">
+      <span id="sidebarRunCount">0 trajectories</span>
+      <small>Feedback records and environment trajectories use one common analysis surface.</small>
+    </div>
+  </aside>
+
+  <section class="analytics-content">
+    <div class="analytics-content-inner">
+      <button class="sidebar-open" id="sidebarOpen" type="button">Sources & filters</button>
+
+      <section class="analytics-category-empty" id="categoryEmpty" hidden>
+        <p>Trajectory source</p>
+        <h1 id="categoryEmptyTitle">No trajectories yet</h1>
+        <span id="categoryEmptyCopy">This source is ready for future runs.</span>
+      </section>
+
+      <div id="runView">
+
+      <header class="run-header">
+        <div class="run-breadcrumb" id="runBreadcrumb">Feedback / 14203f92</div>
+        <div class="run-title-row">
+          <div>
+            <h1 id="trajectoryName">Trajectory</h1>
+            <p id="runSubtitle">Loading trajectory...</p>
+          </div>
+          <span class="run-status" id="trajectoryResult">Successful</span>
+        </div>
+        <div class="run-meta-line" id="runMetaLine"></div>
+      </header>
+
+      <dl class="run-metrics" aria-label="Run metrics">
+        <div><dt id="metricPrimaryLabel">Reward</dt><dd id="metricReward">—</dd></div>
+        <div><dt>Duration</dt><dd id="metricDuration">—</dd></div>
+        <div><dt>Agent steps</dt><dd id="metricSteps">—</dd></div>
+        <div><dt>Tool calls</dt><dd id="metricTools">—</dd></div>
+        <div><dt>Total tokens</dt><dd id="metricTokens">—</dd></div>
+        <div><dt id="metricOutcomeLabel">Verification</dt><dd id="metricVerification">—</dd></div>
+      </dl>
+
+      <details class="analytics-panel pipeline-panel" id="pipelinePanel" hidden>
+        <summary>
+          <span><small>Feedback metadata</small><strong>Pipeline details</strong></span>
+          <span class="pipeline-summary-status" id="pipelineSummaryStatus">Clean pass</span>
+          <i aria-hidden="true">+</i>
+        </summary>
+        <div class="pipeline-detail-body">
+          <section class="pipeline-detail-section pipeline-cleaning-section">
+            <h3>Cleaning quality</h3>
+            <dl class="pipeline-facts" id="pipelineCleanFacts"></dl>
+          </section>
+          <section class="pipeline-detail-section pipeline-classification-section">
+            <h3>Task classification</h3>
+            <dl class="pipeline-facts" id="pipelineClassificationFacts"></dl>
+            <div class="pipeline-reason-list" id="pipelineReasonList"></div>
+          </section>
+          <section class="pipeline-detail-section">
+            <h3>Value & routing</h3>
+            <dl class="pipeline-facts" id="pipelineRoutingFacts"></dl>
+          </section>
+          <section class="pipeline-detail-section">
+            <h3>Quality analysis</h3>
+            <dl class="pipeline-facts" id="pipelineQualityFacts"></dl>
+          </section>
+          <section class="pipeline-detail-section">
+            <h3>Difficulty</h3>
+            <dl class="pipeline-facts" id="pipelineDifficultyFacts"></dl>
+          </section>
+          <section class="pipeline-detail-section">
+            <h3>Thinking cleanup</h3>
+            <dl class="pipeline-facts" id="pipelineThinkingFacts"></dl>
+          </section>
+          <section class="pipeline-detail-section pipeline-segment-section">
+            <h3>Quality segments</h3>
+            <dl class="pipeline-facts" id="pipelineSegmentFacts"></dl>
+            <div class="pipeline-segments" id="pipelineSegments"></div>
+          </section>
+          <section class="pipeline-detail-section pipeline-dataset-section">
+            <h3>Dataset snapshot</h3>
+            <dl class="pipeline-facts" id="pipelineDatasetFacts"></dl>
+          </section>
+        </div>
+      </details>
+
+      <section class="analytics-panel environment-panel" id="environmentPanel" aria-labelledby="environmentTitle">
+        <header class="panel-heading">
+          <div><p>Environment</p><h2 id="environmentTitle">Environment profile</h2></div>
+          <span id="environmentFamily">—</span>
+        </header>
+        <dl class="environment-grid" id="environmentGrid"></dl>
+        <div class="lifecycle" id="environmentLifecycle" hidden></div>
+      </section>
+
+      <div class="analytics-summary-grid">
+        <section class="analytics-panel task-panel" aria-labelledby="taskTitle">
+          <header class="panel-heading"><div><p>Task</p><h2 id="taskTitle">Task summary</h2></div></header>
+          <p class="task-statement" id="taskStatement">—</p>
+          <dl class="compact-facts" id="taskFacts"></dl>
+        </section>
+
+        <section class="analytics-panel verification-panel" aria-labelledby="verificationTitle">
+          <header class="panel-heading"><div><p>Outcome</p><h2 id="verificationTitle">Verification</h2></div></header>
+          <dl class="verification-list" id="verificationList"></dl>
+        </section>
+      </div>
+
+      <section class="analytics-panel token-panel" aria-labelledby="tokenAccountingTitle">
+        <header class="panel-heading token-panel-head">
+          <div><p>Usage</p><h2 id="tokenAccountingTitle">Token composition</h2></div>
+          <strong id="tokenTotal">0</strong>
+        </header>
+        <div class="token-composition" aria-hidden="true">
+          <i class="token-cached" id="tokenCachedBar"></i>
+          <i class="token-uncached" id="tokenUncachedBar"></i>
+          <i class="token-output" id="tokenOutputBar"></i>
+        </div>
+        <dl class="token-breakdown">
+          <div><dt><i class="token-key cached"></i>Cached Input</dt><dd id="tokenCached">0</dd><small id="tokenCachedPct">0%</small></div>
+          <div><dt><i class="token-key uncached"></i>Uncached Input</dt><dd id="tokenUncached">0</dd><small id="tokenUncachedPct">0%</small></div>
+          <div><dt><i class="token-key output"></i>Output</dt><dd id="tokenOutput">0</dd><small id="tokenOutputPct">0%</small></div>
+        </dl>
+      </section>
+
+      <div class="timeline-toolbar" id="timelineToolbar">
+        <div class="timeline-toolbar-title">
+          <p>Agent trajectory</p>
+          <strong id="visibleCount">0</strong><span id="eventCount">events</span>
+        </div>
+        <label class="timeline-search"><span>Search</span><input id="trajectorySearch" type="search" placeholder="Messages, tools, commands..."></label>
+        <div class="raw-filter-bar" id="trajectoryFilters" aria-label="Filter trajectory event types">
+          <button type="button" data-filter="user" aria-pressed="true">User <b>0</b></button>
+          <button type="button" data-filter="thinking" aria-pressed="true">Thinking <b>0</b></button>
+          <button type="button" data-filter="assistant" aria-pressed="true">Assistant <b>0</b></button>
+          <button type="button" data-filter="tool_call" aria-pressed="true">Tool calls <b>0</b></button>
+          <button type="button" data-filter="tool_result" aria-pressed="true">Results <b>0</b></button>
+          <button type="button" data-filter="context" aria-pressed="false">Context <b>0</b></button>
+          <button type="button" data-filter="system" aria-pressed="false">System <b>0</b></button>
+          <button class="high-quality-filter" type="button" id="highQualityOnly" aria-pressed="false" hidden>High-quality only <b id="highQualityCount">0</b></button>
+          <button type="button" id="expandVisible">Expand</button>
+          <button type="button" id="collapseAll">Collapse</button>
+        </div>
+      </div>
+
+      <section class="raw-timeline-shell" aria-labelledby="timelineTitle">
+        <header class="trajectory-panel-head compact">
+          <div><p class="trajectory-overline">Full message stream</p><h2 id="timelineTitle">Complete timeline</h2></div>
+          <span class="state-status" id="timelineStatus">All events</span>
+        </header>
+        <div class="raw-timeline" id="rawTimeline" aria-live="polite"></div>
+        <p class="raw-empty" id="rawEmpty" hidden>No events match the current filters.</p>
+      </section>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script src="script.js"></script>
+<script src="trajectory-data.js"></script>
+<script src="feedback-pipeline-data.js"></script>
+<script src="trajectory-explorer.js"></script>
+</body>
+</html>

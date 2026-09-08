@@ -75,32 +75,10 @@
     });
   });
 
-  /* Counts up to the total already in the markup, never replacing it with
-     a placeholder first — so with no JS, no IntersectionObserver, or
-     reduced motion, the correct number is simply what was always there. */
-  function countUp(el) {
-    if (!el || el.__ran) return;
-    el.__ran = true;
-    var target = parseInt(el.textContent, 10);
-    if (!(target > 0)) return;
-    var t0 = 0;
-    function step(ts) {
-      if (!t0) t0 = ts;
-      var p = Math.min(1, (ts - t0) / 760);
-      el.textContent = Math.round(target * (1 - Math.pow(1 - p, 3)));
-      if (p < 1) requestAnimationFrame(step);
-    }
-    requestAnimationFrame(step);
-  }
-
   /* ── scroll reveal ───────────────────────────────────── */
   var revealables = document.querySelectorAll('.reveal, .env-list');
   function enter(el) {
     el.classList.add('in-view');
-    if (el.classList.contains('env-list')) {
-      var track = el.closest('.track');
-      if (track) countUp(track.querySelector('.count'));
-    }
   }
   function revealAll() {
     Array.prototype.forEach.call(revealables, function (el) {
