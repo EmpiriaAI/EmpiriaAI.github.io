@@ -1547,6 +1547,55 @@ html.anim .rise {
 }
 .trajectory-launch-path i:last-child { background: var(--accent); }
 .trajectory-launch-arrow { font-size: 24px; color: var(--accent-soft); }
+.environment-launch { margin-top: 12px; border-color: var(--line-2); }
+.environment-launch-orbit {
+  position: relative;
+  display: block;
+  width: 150px;
+  height: 48px;
+}
+.environment-launch-orbit::before,
+.environment-launch-orbit::after {
+  content: "";
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  border: 1px solid var(--line-2);
+  border-radius: 50%;
+  transform: rotate(-8deg);
+}
+.environment-launch-orbit::before { top: 6px; bottom: 6px; }
+.environment-launch-orbit::after { top: 15px; bottom: 15px; border-color: rgba(200,69,42,.42); }
+.environment-launch-orbit i,
+.environment-launch-orbit b,
+.environment-launch-orbit em {
+  position: absolute;
+  z-index: 1;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  box-shadow: 0 0 10px rgba(200,69,42,.5);
+}
+.environment-launch-orbit i { left: 16px; bottom: 7px; }
+.environment-launch-orbit b { left: 68px; top: 13px; }
+.environment-launch-orbit em { right: 17px; top: 6px; }
+.env-list-linked { display: block !important; padding: 0 !important; }
+.env-list-linked > a {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  align-items: baseline;
+  gap: 12px;
+  padding-block: 13px;
+}
+.env-explore-label {
+  margin-left: auto;
+  font-family: var(--f-mono);
+  font-size: 8px;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  color: var(--accent-soft);
+}
 
 /* ── trajectory explorer ────────────────────────────────── */
 .trajectory-main { position: relative; z-index: 1; }
@@ -2794,6 +2843,12 @@ html.js .wordmark.written.rewriting span::after {
 @media (hover: hover) and (pointer: fine) {
   .trajectory-launch { transition: border-color .22s ease, background-color .22s ease; }
   .trajectory-launch:hover { border-color: var(--accent); background: rgba(18,18,22,.82); }
+  .environment-launch-orbit i,
+  .environment-launch-orbit b,
+  .environment-launch-orbit em { transition: transform .35s cubic-bezier(.22,.61,.36,1); }
+  .environment-launch:hover .environment-launch-orbit i { transform: translate(5px,-5px); }
+  .environment-launch:hover .environment-launch-orbit b { transform: translate(7px,-3px); }
+  .environment-launch:hover .environment-launch-orbit em { transform: translate(4px,-2px); }
   .trajectory-controls button:hover { border-color: var(--ink-4); color: var(--ink); }
   .raw-filter-bar button:hover { border-color: var(--ink-4); color: var(--ink-2); }
   .raw-event-summary:hover .raw-event-heading strong { color: var(--ink); }

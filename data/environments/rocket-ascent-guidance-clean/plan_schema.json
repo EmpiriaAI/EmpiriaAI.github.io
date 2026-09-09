@@ -1,0 +1,56 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Ascent guidance plan",
+  "description": "Guidance plan for the two-stage launch vehicle defined in README.md. The plan commands a launch azimuth, a time-referenced piecewise-linear pitch program, and an upper-stage burn/coast schedule. All times are seconds since liftoff (t=0).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["launch_azimuth_deg", "pitch_program", "upper_stage_schedule"],
+  "properties": {
+    "launch_azimuth_deg": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 360,
+      "description": "Launch azimuth in degrees from north, positive toward east, in [0, 360). Defines the inertially-fixed launch-direction unit vector uL = cos(A)*Nhat + sin(A)*Ehat of the site-local basis at t=0."
+    },
+    "pitch_program": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["times_s", "pitch_deg"],
+      "properties": {
+        "times_s": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 24,
+          "items": { "type": "number", "minimum": 0, "maximum": 1800 },
+          "description": "Strictly increasing knot times since liftoff; times_s[0] must be 0."
+        },
+        "pitch_deg": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 24,
+          "items": { "type": "number", "minimum": -20, "maximum": 90 },
+          "description": "Pitch at each knot: angle of thrust above the local horizon about the inertially-fixed launch direction. Same length as times_s. Piecewise-linear between knots, hold last value after the final knot."
+        }
+      }
+    },
+    "upper_stage_schedule": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 12,
+      "description": "Sequential burn/coast entries for the restartable upper stage, starting at t = t_burn1 + separation_delay_s. Total duration at most 3000 s.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["type", "duration_s"],
+        "properties": {
+          "type": { "enum": ["burn", "coast"] },
+          "duration_s": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "description": "Segment duration in seconds. A burn segment ends at min(duration_s, propellant exhaustion); after exhaustion the remainder of the segment is a coast."
+          }
+        }
+      }
+    }
+  }
+}

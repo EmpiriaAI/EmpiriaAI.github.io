@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Environment Explorer — Empiria Labs</title>
+<meta name="description" content="Inspect interactive AI task environments, their contracts, configurations, and public workspace files.">
+<meta name="theme-color" content="#08080A">
+<link rel="stylesheet" href="fonts.css">
+<link rel="preload" href="fonts/space-grotesk.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/inter-tight.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/jetbrains-mono.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="environment-explorer.css?v=20260909">
+</head>
+<body class="environment-browser-body">
+<div class="world" aria-hidden="true"><div class="world-grid"></div></div>
+
+<header class="environment-topbar">
+  <div class="environment-topbar-inner">
+    <a class="brand" href="index.html#top">
+      <span class="brand-mark" aria-hidden="true">
+        <svg class="brand-cube-construct" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path class="brand-cube-outline" d="m32 5 25 14v27L32 59 7 46V19L32 5Z"/>
+          <path class="brand-cube-grid" d="m7 19 25 14 25-14M32 33v26"/>
+          <path class="brand-cube-top" d="m32 5 25 14-25 14L7 19 32 5Z"/>
+        </svg>
+      </span>
+      <span class="brand-name">Empiria&nbsp;Labs</span>
+    </a>
+    <span class="environment-product-name">Environment Explorer</span>
+    <nav class="environment-type-nav" id="environmentTypeNav" aria-label="Environment types">
+      <button type="button" data-environment-type="swe" aria-pressed="false"><span>SWE</span><b id="sweEnvironmentCount">0</b></button>
+      <button type="button" data-environment-type="terminal" aria-pressed="true"><span>Terminal</span><b id="terminalEnvironmentCount">1</b></button>
+      <button type="button" data-environment-type="cua" aria-pressed="false"><span>CUA</span><b id="cuaEnvironmentCount">0</b></button>
+    </nav>
+    <a class="environment-back-link" href="digital-environments.html">Digital environments <span>→</span></a>
+  </div>
+</header>
+
+<main class="environment-browser">
+  <aside class="environment-catalog" id="environmentCatalog">
+    <div class="catalog-heading">
+      <div><p>Environment catalog</p><strong id="environmentCount">1 environment</strong></div>
+      <button id="catalogClose" type="button" aria-label="Hide environment catalog">‹</button>
+    </div>
+    <label class="catalog-search">
+      <span>Find an environment</span>
+      <input id="environmentSearch" type="search" placeholder="Name, category, tag...">
+    </label>
+    <div class="catalog-current-type">
+      <span id="catalogTypeCode">TER</span>
+      <div><small>Environment type</small><strong id="catalogTypeName">Terminal</strong></div>
+    </div>
+    <nav class="catalog-groups" id="environmentList" aria-label="Available environments"></nav>
+    <div class="catalog-note">
+      <span>Public task surface</span>
+      <small>Solutions, private tests, and hidden verifier internals are intentionally excluded.</small>
+    </div>
+  </aside>
+
+  <section class="environment-content">
+    <button class="catalog-open" id="catalogOpen" type="button">Show environment catalog</button>
+    <section class="environment-type-empty" id="environmentTypeEmpty" hidden>
+      <p id="emptyTypeCode">SWE environment</p>
+      <h1 id="emptyTypeTitle">Software Engineering</h1>
+      <span id="emptyTypeCopy">Repository-level environments for coding, testing, debugging, and verified software changes.</span>
+      <div class="empty-type-grid" id="emptyTypeTraits"></div>
+      <button type="button" id="emptyTypeReturn">View available Terminal environment →</button>
+    </section>
+    <div class="environment-content-inner" id="environmentDetail">
+      <nav class="environment-breadcrumb" aria-label="Breadcrumb">
+        <a href="digital-environments.html">Digital environments</a><span>/</span><span id="breadcrumbType">Terminal</span><span>/</span><span id="breadcrumbFamily">Terminal-Bench</span><span>/</span><strong id="breadcrumbTask">Task</strong>
+      </nav>
+
+      <header class="environment-hero">
+        <div class="environment-hero-copy">
+          <div class="environment-hero-status"><span id="environmentStatus">Available</span><i></i><span class="environment-type-chip" id="environmentType">Terminal environment</span><i></i><span id="environmentFamily">Terminal-Bench</span></div>
+          <h1 id="environmentTitle">Rocket Ascent Guidance</h1>
+          <p id="environmentSubtitle">Design autonomous two-stage launch guidance for randomized orbital targets.</p>
+          <div class="environment-tags" id="environmentTags"></div>
+        </div>
+
+        <figure class="orbit-visual" aria-labelledby="orbitVisualTitle">
+          <figcaption><span>Environment model</span><strong id="orbitVisualTitle">Action → physics → verification</strong></figcaption>
+          <svg viewBox="0 0 600 350" role="img" aria-label="A launch trajectory progressing from Earth through stage separation to target orbit">
+            <defs>
+              <linearGradient id="earthShade" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#27272d"/><stop offset="1" stop-color="#0c0c0f"/></linearGradient>
+              <filter id="trajectoryGlow" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+            </defs>
+            <path class="orbit-ring orbit-ring-back" d="M170 282C248 181 413 89 548 90"/>
+            <path class="orbit-ring" d="M170 282C282 328 487 258 548 90"/>
+            <circle class="earth-disc" cx="121" cy="315" r="128" fill="url(#earthShade)"/>
+            <path class="earth-grid" d="M15 286c68-19 150-11 221 31M30 242c73 8 134 38 177 90M79 194c32 43 51 98 54 156M147 190c-9 59-32 112-71 153"/>
+            <path class="flight-path-shadow" d="M139 259C177 190 230 172 276 159S365 113 451 100"/>
+            <path class="flight-path" d="M139 259C177 190 230 172 276 159S365 113 451 100" pathLength="1"/>
+            <g class="flight-node node-launch" transform="translate(139 259)"><circle r="5"/><circle class="node-pulse" r="10"/><text x="14" y="4">LIFTOFF</text></g>
+            <g class="flight-node node-stage" transform="translate(276 159)"><circle r="5"/><circle class="node-pulse" r="10"/><text x="14" y="4">STAGE 02</text></g>
+            <g class="flight-node node-target" transform="translate(451 100)"><circle r="5"/><circle class="node-pulse" r="10"/><text x="14" y="4">TARGET ORBIT</text></g>
+            <g class="vehicle" transform="translate(226 177) rotate(37)"><path d="M0-15 5 5 0 11-5 5Z"/><path d="M-4 7-8 14M4 7l8 7"/></g>
+            <text class="orbit-label" x="420" y="72">INDEPENDENT RE-SIMULATION</text>
+          </svg>
+          <div class="orbit-legend"><span><i></i>Commanded guidance</span><span><i></i>Verified state</span></div>
+        </figure>
+      </header>
+
+      <nav class="environment-tabs" role="tablist" aria-label="Environment views">
+        <button type="button" role="tab" id="tabInstruction" aria-controls="panelInstruction" aria-selected="true" data-tab="instruction"><span>01</span>Instruction</button>
+        <button type="button" role="tab" id="tabConfiguration" aria-controls="panelConfiguration" aria-selected="false" data-tab="configuration"><span>02</span>Configuration</button>
+        <button type="button" role="tab" id="tabFiles" aria-controls="panelFiles" aria-selected="false" data-tab="files"><span>03</span>Files <b id="publicFileCount">6</b></button>
+      </nav>
+
+      <section class="environment-panel environment-instruction" id="panelInstruction" role="tabpanel" aria-labelledby="tabInstruction">
+        <div class="contract-strip" id="contractStrip"></div>
+        <section class="environment-loop" aria-labelledby="loopTitle">
+          <header><p>Interaction loop</p><h2 id="loopTitle">What the agent must make possible</h2></header>
+          <div class="environment-phases" id="environmentPhases"></div>
+        </section>
+        <article class="environment-document">
+          <header><div><p>Task definition</p><h2>Agent instruction</h2></div><span>instruction.md</span></header>
+          <div class="markdown-body" id="instructionDocument"><p class="loading-copy">Loading task instruction…</p></div>
+        </article>
+      </section>
+
+      <section class="environment-panel" id="panelConfiguration" role="tabpanel" aria-labelledby="tabConfiguration" hidden>
+        <div class="configuration-layout">
+          <section class="configuration-card resources-card"><header><p>Compute envelope</p><h2>Resources</h2></header><dl id="resourceGrid"></dl></section>
+          <section class="configuration-card timeout-card"><header><p>Time envelope</p><h2>Timeouts</h2></header><dl id="timeoutGrid"></dl></section>
+          <section class="configuration-card verification-card"><header><p>Reward signal</p><h2>Passing conditions</h2></header><dl id="verificationGrid"></dl></section>
+          <section class="configuration-card difficulty-card">
+            <header><p>Challenge profile</p><h2>Difficulty</h2></header>
+            <div class="difficulty-display"><strong id="difficultyValue">Frontier</strong><span id="difficultyGrade">Too hard or broken</span></div>
+            <dl class="difficulty-facts"><div><dt>Calibration</dt><dd id="calibrationValue">—</dd></div><div><dt>Expert estimate</dt><dd id="expertEstimate">—</dd></div></dl>
+          </section>
+        </div>
+        <details class="source-config">
+          <summary><span><small>Source</small><strong>View task configuration</strong></span><i>+</i></summary>
+          <pre><code id="taskConfigSource">Loading task.toml…</code></pre>
+        </details>
+      </section>
+
+      <section class="environment-panel" id="panelFiles" role="tabpanel" aria-labelledby="tabFiles" hidden>
+        <div class="file-browser">
+          <aside class="file-tree-panel">
+            <header><div><p>Public workspace</p><h2>Files</h2></div><span id="fileTreeCount">6</span></header>
+            <label class="file-search"><span>Filter files</span><input id="fileSearch" type="search" placeholder="Filename or path..."></label>
+            <nav class="file-tree" id="fileTree" aria-label="Public task files"></nav>
+            <p class="file-safety-note">Excluded: solutions, tests, verifier internals, dependency folders, caches, and generated files.</p>
+          </aside>
+          <section class="file-preview">
+            <header><div><p id="fileType">Markdown</p><h2 id="filePath">instruction.md</h2></div><span id="fileSize">2.2 KB</span></header>
+            <div class="file-preview-body" id="filePreview"><p class="loading-copy">Select a file to inspect it.</p></div>
+          </section>
+        </div>
+      </section>
+    </div>
+  </section>
+</main>
+
+<script src="environment-data.js"></script>
+<script src="environment-explorer.js?v=20260909"></script>
+</body>
+</html>
