@@ -53,6 +53,11 @@
       <label><input type="checkbox" data-run-filter="successful" checked> Successful</label>
       <label><input type="checkbox" data-run-filter="failed" checked> Failed / error</label>
     </div>
+    <div class="sidebar-filter-section snapshot-filter-section">
+      <p>Snapshots</p>
+      <label><input type="checkbox" id="deduplicateSessions"> Longest snapshot per session</label>
+      <small id="deduplicateHint">42 snapshots → 22 longest</small>
+    </div>
     <div class="sidebar-footnote">
       <span id="sidebarRunCount">0 trajectories</span>
       <small>Feedback records and environment trajectories share one analysis surface.</small>

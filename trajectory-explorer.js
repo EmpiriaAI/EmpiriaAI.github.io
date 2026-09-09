@@ -7,6 +7,7 @@
   var selectedIndex = 0;
   var activeCategory = 'feedback';
   var highQualityOnly = false;
+  var deduplicateSessions = false;
   var activeFilters = new Set(['user', 'thinking', 'assistant', 'tool_call', 'tool_result']);
   var elements = {
     topCategoryNav: document.getElementById('topCategoryNav'),
@@ -36,6 +37,7 @@
     expand: document.getElementById('expandVisible'),
     collapse: document.getElementById('collapseAll'),
     highQualityOnly: document.getElementById('highQualityOnly'),
+    deduplicateSessions: document.getElementById('deduplicateSessions'),
     environmentPanel: document.getElementById('environmentPanel'),
     environmentGrid: document.getElementById('environmentGrid'),
     lifecycle: document.getElementById('environmentLifecycle'),
@@ -117,7 +119,24 @@
   }
 
   function categoryCount(category) {
-    return categoryItems(category).length;
+    return applySnapshotDedup(categoryItems(category)).length;
+  }
+
+  function applySnapshotDedup(items) {
+    if (!deduplicateSessions) return items;
+    var bestBySession = new Map();
+    items.forEach(function (trajectory) {
+      if (!trajectory.snapshotLabel || !trajectory.conversationId) return;
+      var current = bestBySession.get(trajectory.conversationId);
+      if (!current || trajectory.messageCount > current.messageCount ||
+          (trajectory.messageCount === current.messageCount && trajectory.eventCount > current.eventCount) ||
+          (trajectory.messageCount === current.messageCount && trajectory.eventCount === current.eventCount && trajectory.snapshotOrdinal > current.snapshotOrdinal)) {
+        bestBySession.set(trajectory.conversationId, trajectory);
+      }
+    });
+    return items.filter(function (trajectory) {
+      return !trajectory.snapshotLabel || bestBySession.get(trajectory.conversationId) === trajectory;
+    });
   }
 
   function selectedTrajectory() {
@@ -182,6 +201,9 @@
     var allowFailed = outcomeChecks.find(function (input) { return input.dataset.runFilter === 'failed'; }).checked;
     elements.sidebarGroups.textContent = '';
     var visibleRuns = 0;
+    var snapshotItems = categoryItems('feedback').filter(function (trajectory) { return Boolean(trajectory.snapshotLabel); });
+    var snapshotSessions = new Set(snapshotItems.map(function (trajectory) { return trajectory.conversationId; })).size;
+    text('deduplicateHint', deduplicateSessions ? snapshotSessions + ' longest snapshots · ' + (snapshotItems.length - snapshotSessions) + ' hidden' : snapshotItems.length + ' snapshots → ' + snapshotSessions + ' longest');
 
     ['feedback', 'swe', 'terminal'].forEach(function (category) {
       var section = document.createElement('section');
@@ -195,7 +217,7 @@
       heading.addEventListener('click', function () {
         activeCategory = category;
         highQualityOnly = false;
-        var first = categoryItems(category)[0];
+        var first = applySnapshotDedup(categoryItems(category))[0];
         if (first) selectedIndex = trajectories.indexOf(first);
         renderAll();
       });
@@ -203,7 +225,7 @@
 
       var list = document.createElement('div');
       list.className = 'sidebar-run-list';
-      var items = categoryItems(category).filter(function (trajectory) {
+      var items = applySnapshotDedup(categoryItems(category)).filter(function (trajectory) {
         var status = trajectoryStatus(trajectory);
         if (status.successful && !allowSuccess) return false;
         if (!status.successful && !allowFailed) return false;
@@ -624,10 +646,23 @@
 
   elements.topCategoryNav.addEventListener('click', function (event) {
     var button = event.target.closest('[data-category]'); if (!button) return;
-    activeCategory = button.dataset.category; highQualityOnly = false; var first = categoryItems(activeCategory)[0]; if (first) selectedIndex = trajectories.indexOf(first); renderAll();
+    activeCategory = button.dataset.category; highQualityOnly = false; var first = applySnapshotDedup(categoryItems(activeCategory))[0]; if (first) selectedIndex = trajectories.indexOf(first); renderAll();
   });
   elements.runSearch.addEventListener('input', renderSidebar);
   Array.prototype.forEach.call(document.querySelectorAll('[data-run-filter]'), function (input) { input.addEventListener('change', renderSidebar); });
+  elements.deduplicateSessions.addEventListener('change', function () {
+    deduplicateSessions = elements.deduplicateSessions.checked;
+    if (deduplicateSessions && selectedTrajectory().snapshotLabel) {
+      var visible = applySnapshotDedup(categoryItems('feedback'));
+      if (visible.indexOf(selectedTrajectory()) === -1) {
+        var replacement = visible.find(function (trajectory) {
+          return trajectory.conversationId === selectedTrajectory().conversationId;
+        });
+        if (replacement) selectedIndex = trajectories.indexOf(replacement);
+      }
+    }
+    renderAll();
+  });
   elements.search.addEventListener('input', renderTimeline);
   elements.filters.addEventListener('click', function (event) {
     var button = event.target.closest('[data-filter]'); if (!button) return;
