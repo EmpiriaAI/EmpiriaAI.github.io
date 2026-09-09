@@ -32,6 +32,41 @@ TASK_LABELS = {
 }
 
 
+# A trajectory records whatever the agent happened to read, so secrets arrive
+# as file contents rather than as fields. These patterns close the gaps the
+# original rules left open: key material, SSH targets, routable IPs and mail
+# addresses. Loopback and RFC1918 addresses are kept — they carry meaning in a
+# config listing and identify nobody.
+PRIVATE_KEY_RE = re.compile(
+    r"-----BEGIN [A-Z ]*PRIVATE KEY-----.*?-----END [A-Z ]*PRIVATE KEY-----", re.S
+)
+PUBLIC_KEY_RE = re.compile(r"\b(ssh-(?:rsa|ed25519|dss))\s+[A-Za-z0-9+/=]{40,}")
+SSH_TARGET_RE = re.compile(
+    r"\b[A-Za-z0-9._-]{1,32}@(?:\d{1,3}\.){3}\d{1,3}\b"
+)
+PUBLIC_IP_RE = re.compile(r"(?<![\w.])((?:\d{1,3}\.){3}\d{1,3})(?![\w.])")
+EMAIL_RE = re.compile(
+    r"\b[A-Za-z0-9._%+-]{2,}@[A-Za-z0-9-]+\.(?:com|cn|org|net|edu|io|dev|me|co|gov|ai)\b",
+    re.I,
+)
+
+
+def _redact_public_ip(match: re.Match[str]) -> str:
+    address = match.group(1)
+    octets = [int(part) for part in address.split(".") if part.isdigit()]
+    if len(octets) != 4 or any(part > 255 for part in octets):
+        return address                      # a version string, not an address
+    first, second = octets[0], octets[1]
+    private = (
+        first in {0, 10, 127}
+        or (first == 192 and second == 168)
+        or (first == 172 and 16 <= second <= 31)
+        or (first == 169 and second == 254)
+        or first >= 224
+    )
+    return address if private else "[REDACTED_HOST]"
+
+
 def redact(text: str) -> str:
     text = re.sub(r"\bsk-[A-Za-z0-9_-]{12,}\b", "[REDACTED_API_KEY]", text)
     text = re.sub(r"\bgh[pousr]_[A-Za-z0-9]{20,}\b", "[REDACTED_GITHUB_TOKEN]", text)
@@ -47,42 +82,113 @@ def redact(text: str) -> str:
         text,
     )
     text = re.sub(r"(https?://)[^/@\s:]+:[^/@\s]+@", r"\1[REDACTED]@", text)
+    text = PRIVATE_KEY_RE.sub("[REDACTED_PRIVATE_KEY]", text)
+    text = PUBLIC_KEY_RE.sub(r"\1 [REDACTED_PUBLIC_KEY]", text)
+    text = SSH_TARGET_RE.sub("[REDACTED_SSH_TARGET]", text)
+    text = PUBLIC_IP_RE.sub(_redact_public_ip, text)
+    text = EMAIL_RE.sub("[REDACTED_EMAIL]", text)
     text = re.sub(r"/Users/[^/\s\"']+", "/Users/[USER]", text)
     text = re.sub(r"/home/[^/\s\"']+", "/home/[USER]", text)
     text = re.sub(r"([A-Za-z]:\\Users\\)[^\\\s\"']+", r"\1[USER]", text)
     return text
 
 
-def text_content(message: dict) -> str:
-    content = message.get("content")
-    if isinstance(content, str):
-        return redact(content)
-    if isinstance(content, list):
-        parts = []
-        for block in content:
-            if isinstance(block, str):
-                parts.append(block)
-            elif isinstance(block, dict):
-                value = block.get("text") or block.get("content")
-                if isinstance(value, str):
-                    parts.append(value)
-        return redact("\n".join(parts))
+# Reasoning arrives as its own content block — {"type": "thinking",
+# "thinking": ...} on Anthropic, {"type": "reasoning", ...} elsewhere — and
+# neither carries a "text" key. Reading blocks as `text or content` without
+# looking at the type drops reasoning silently, or splices it into the
+# assistant's prose. Split on the type instead.
+REASONING_BLOCKS = {"thinking", "redacted_thinking", "reasoning"}
+
+
+def _block_text(block: dict) -> str:
+    for key in ("text", "thinking", "reasoning", "content"):
+        value = block.get(key)
+        if isinstance(value, str) and value:
+            return value
     return ""
 
 
-def tool_status(content: str) -> str:
-    value = content.lower()
-    if "timed out" in value or "timeout" in value:
-        return "timeout"
-    if "rejected" in value or "not executed" in value or "permission denied" in value:
-        return "rejected"
-    error_signals = (
-        '"returncode": 1', '"returncode": -1', "exit code 1", "traceback (most recent call last)",
-        "modulenotfounderror", "syntaxerror", "fatal:", "command failed", "iserror\":true"
-    )
-    if any(signal in value for signal in error_signals):
+def split_message_content(message: dict) -> tuple[str, str]:
+    """Return (visible prose, reasoning) for one message, redacted."""
+    content = message.get("content")
+    if isinstance(content, str):
+        return redact(content), ""
+    visible: list[str] = []
+    reasoning: list[str] = []
+    if isinstance(content, list):
+        for block in content:
+            if isinstance(block, str):
+                visible.append(block)
+            elif isinstance(block, dict):
+                text = _block_text(block)
+                if not text:
+                    continue
+                bucket = reasoning if block.get("type") in REASONING_BLOCKS else visible
+                bucket.append(text)
+    return redact("\n".join(visible)), redact("\n".join(reasoning))
+
+
+def text_content(message: dict) -> str:
+    return split_message_content(message)[0]
+
+
+# Failure signals come in two strengths, and the first export treated them all
+# as one. Distinctive phrases the harness emits ("Traceback (most recent call
+# last)", "The tool use was rejected") are safe to look for anywhere in the
+# body. Ordinary English words are not: searching a whole tool result for a
+# bare "timeout" labels every source file that merely *mentions* one as a
+# timed-out call, which is how 385 of 388 timeout labels were wrong. Weak
+# signals are therefore only honoured near the ends of the output, where the
+# harness writes, and never in the middle, where the file content sits.
+STATUS_EDGE = 1200
+
+STRONG = (
+    ("timeout", re.compile(r"\btimed out\b", re.I)),
+    ("rejected", re.compile(r"\bthe tool use was rejected\b|\bupdates were rejected\b"
+                            r"|\bremote rejected\b", re.I)),
+    ("error", re.compile(r"traceback \(most recent call last\)|\bmodulenotfounderror\b", re.I)),
+)
+
+WEAK = (
+    ("rejected", re.compile(r"\brejected\b|\bpermission denied\b"
+                            r"|\boperation not permitted\b|\bnot executed\b", re.I)),
+    ("error", re.compile(r'"returncode"\s*:\s*-?[1-9]|\bexit code [1-9]'
+                         r"|\bsyntaxerror\b|^fatal:|\nfatal:|\bcommand failed\b", re.I | re.M)),
+)
+
+
+def tool_status(message: dict, content: str) -> str:
+    """Classify a tool result, trusting structure over prose where possible."""
+    if message.get("is_error") is True or message.get("isError") is True:
         return "error"
+    for status, pattern in STRONG:
+        if pattern.search(content):
+            return status
+    edges = content[:STATUS_EDGE]
+    if len(content) > STATUS_EDGE:
+        edges += "\n" + content[-STATUS_EDGE:]
+    for status, pattern in WEAK:
+        if pattern.search(edges):
+            return status
     return "success"
+
+
+# The exported `user` and `system` streams are not what their names suggest:
+# across the first corpus only 69.4% of `user` events were a person typing and
+# only 1.7% of `system` events were the real system prompt. Every consumer was
+# re-deriving that split from the text; export it once instead.
+def user_kind(content: str) -> str:
+    stripped = content.lstrip()
+    if stripped.startswith("[Request interrupted by user"):
+        return "interrupt"
+    if "<task-notification>" in content:
+        return "notify"
+    if "<command-name>" in content or "<command-message>" in content:
+        return "command"
+    if is_context_message(content):
+        return "context"
+    return "user"
 
 
 def is_context_message(content: str) -> bool:
@@ -112,10 +218,13 @@ def build_node_sources(messages: list[dict]) -> dict[int, list[int]]:
             mapping[node_index] = [*pending, message_index]
             node_index += 1
             pending = []
+    if pending:
+        # a run that ends on tool output still belongs to a node
+        mapping[node_index] = pending
     return mapping
 
 
-def build_events(messages: list[dict]) -> tuple[list[dict], dict, dict]:
+def build_events(messages: list[dict]) -> tuple[list[dict], dict, dict, dict, dict]:
     call_names: dict[str, str] = {}
     for message in messages:
         if message.get("role") != "assistant":
@@ -128,25 +237,49 @@ def build_events(messages: list[dict]) -> tuple[list[dict], dict, dict]:
     events: list[dict] = []
     counts = Counter()
     tool_counts = Counter()
+    kind_counts = Counter()
+    status_counts = Counter()
+    seen_system = False
     for index, message in enumerate(messages):
         role = message.get("role")
-        content = text_content(message)
+        content, reasoning = split_message_content(message)
         if role == "system":
-            events.append({"type": "system", "sourceIndex": index, "title": "System context", "content": content})
+            # only the first system message is the prompt; the rest is the
+            # per-turn boilerplate the harness re-injects every round
+            kind = "system" if not seen_system else "inject"
+            seen_system = True
+            title = "System context" if kind == "system" else "Per-turn injection"
+            events.append({"type": "system", "kind": kind, "sourceIndex": index, "title": title, "content": content})
             counts["system"] += 1
+            kind_counts[kind] += 1
         elif role == "user":
-            event_type = "context" if is_context_message(content) else "user"
-            title = "Injected context" if event_type == "context" else "User request"
-            events.append({"type": event_type, "sourceIndex": index, "title": title, "content": content})
+            kind = user_kind(content)
+            event_type = "context" if kind == "context" else "user"
+            title = {
+                "context": "Injected context", "interrupt": "User interrupt",
+                "notify": "Task notification", "command": "Slash command",
+                "user": "User request",
+            }[kind]
+            events.append({"type": event_type, "kind": kind, "sourceIndex": index, "title": title, "content": content})
             counts[event_type] += 1
+            kind_counts[kind] += 1
         elif role == "assistant":
-            thinking = message.get("_step4_thinking")
-            if isinstance(thinking, str) and thinking.strip():
-                events.append({"type": "thinking", "sourceIndex": index, "title": "Agent reasoning", "content": redact(thinking)})
+            # `_step4_thinking` only exists when step 4.5 ran — it was absent for
+            # every trajectory in the first corpus. Fall back to the reasoning
+            # blocks carried on the message itself, then to the flat field.
+            raw = message.get("_step4_thinking") or message.get("reasoning_content") or ""
+            thinking = redact(raw) if isinstance(raw, str) and raw.strip() else ""
+            if not thinking:
+                thinking = reasoning        # already redacted by the split
+            if thinking.strip():
+                events.append({"type": "thinking", "kind": "thinking", "sourceIndex": index,
+                               "title": "Agent reasoning", "content": thinking})
                 counts["thinking"] += 1
+                kind_counts["thinking"] += 1
             if content.strip():
-                events.append({"type": "assistant", "sourceIndex": index, "title": "Assistant message", "content": content})
+                events.append({"type": "assistant", "kind": "assistant", "sourceIndex": index, "title": "Assistant message", "content": content})
                 counts["assistant"] += 1
+                kind_counts["assistant"] += 1
             for call in message.get("tool_calls") or []:
                 fn = call.get("function") or {}
                 name = fn.get("name") or "Tool"
@@ -154,22 +287,25 @@ def build_events(messages: list[dict]) -> tuple[list[dict], dict, dict]:
                 if not isinstance(args, str):
                     args = json.dumps(args, ensure_ascii=False)
                 events.append({
-                    "type": "tool_call", "sourceIndex": index, "title": name,
+                    "type": "tool_call", "kind": "tool_call", "sourceIndex": index, "title": name,
                     "toolCallId": call.get("id", ""), "content": redact(args)
                 })
                 counts["tool_call"] += 1
+                kind_counts["tool_call"] += 1
                 tool_counts[name] += 1
         elif role == "tool":
             call_id = message.get("tool_call_id", "")
             name = call_names.get(call_id, "Tool")
             summary = message.get("_tool_response_summary") or message.get("_step4_tool_summary") or ""
             events.append({
-                "type": "tool_result", "sourceIndex": index, "title": f"{name} result",
-                "toolCallId": call_id, "status": tool_status(content),
+                "type": "tool_result", "kind": "tool_result", "sourceIndex": index, "title": f"{name} result",
+                "toolCallId": call_id, "status": tool_status(message, content),
                 "summary": redact(summary) if isinstance(summary, str) else "", "content": content
             })
             counts["tool_result"] += 1
-    return events, dict(counts), dict(tool_counts)
+            kind_counts["tool_result"] += 1
+            status_counts[events[-1]["status"]] += 1
+    return events, dict(counts), dict(tool_counts), dict(kind_counts), dict(status_counts)
 
 
 def load_real_usage(raw_dir: Path, request_ids: set[str]) -> dict[str, dict]:
@@ -229,7 +365,12 @@ def camel_meta(row: dict, trace: dict, node_sources: dict[int, list[int]], datas
             "pattern": segment.get("pattern", ""),
             "reason": redact(segment.get("reason", "")),
         })
-    thinking_count = sum(1 for message in trace.get("messages") or [] if message.get("_step4_thinking"))
+    messages = trace.get("messages") or []
+    thinking_count = sum(1 for message in messages if message.get("_step4_thinking"))
+    inline_thinking = sum(
+        1 for message in messages
+        if message.get("role") == "assistant" and split_message_content(message)[1].strip()
+    )
     quality = refinement.get("quality") or {}
     difficulty = refinement.get("difficulty") or {}
     return {
@@ -285,8 +426,13 @@ def camel_meta(row: dict, trace: dict, node_sources: dict[int, list[int]], datas
         "segments": segments,
         "thinkingClean": {
             "category": refinement.get("effective_category"),
-            "status": "Step 4.5 not run",
-            "withThinking": thinking_count,
+            # the status was hardcoded; report the source the reasoning actually
+            # came from so a silent loss is visible in the data
+            "status": ("Step 4.5" if thinking_count else
+                       "message blocks" if inline_thinking else "none found"),
+            "withThinking": thinking_count or inline_thinking,
+            "fromStep45": thinking_count,
+            "fromMessageBlocks": inline_thinking,
             "dropped": None,
             "nearDuplicates": None,
         },
@@ -313,7 +459,9 @@ def main() -> None:
     real_usage = load_real_usage(raw_dir, request_ids)
     missing_usage = sorted(request_ids - set(real_usage))
     if missing_usage:
-        raise SystemExit(f"Missing recorder usage for {len(missing_usage)} request_id(s): {missing_usage}")
+        # one absent recorder file used to abort the entire export; mark those
+        # rows as estimated instead so the rest still ships
+        print(f"warning: no recorder usage for {len(missing_usage)} request_id(s); marking them estimated")
     totals = Counter(row.get("conversation_id") for row in rows)
     ordinals = defaultdict(int)
     task_types = Counter()
@@ -361,8 +509,11 @@ def main() -> None:
         clean = trace.get("_clean_meta") or {}
         messages = trace.get("messages") or []
         request_id = trace.get("request_id")
-        usage = real_usage[request_id]
-        events, counts, tool_counts = build_events(messages)
+        usage = real_usage.get(request_id)
+        usage_estimated = usage is None
+        if usage_estimated:
+            usage = {"total": clean.get("estimated_tokens") or 0, "source": "estimated", "requestId": request_id}
+        events, counts, tool_counts, kind_counts, status_counts = build_events(messages)
         node_sources = build_node_sources(messages)
         pipeline = camel_meta(row, trace, node_sources, dataset)
         task_type = classification.get("task_type") or "other"
@@ -395,11 +546,13 @@ def main() -> None:
             "estimatedTokens": clean.get("estimated_tokens") or 0,
             "errorRate": clean.get("error_rate"),
             "counts": counts,
+            "kindCounts": kind_counts,
+            "statusCounts": status_counts,
             "toolCounts": tool_counts,
             "eventCount": len(events),
             "events": None,
             "lazyData": f"data/feedback-snapshots/{event_file}",
-            "tokenUsageEstimated": False,
+            "tokenUsageEstimated": usage_estimated,
             "tokenUsage": usage,
             "agent": "Claude Code",
             "environment": {
