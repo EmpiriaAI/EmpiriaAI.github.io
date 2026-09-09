@@ -8,6 +8,64 @@
 
   var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+  /* ── seamless marquee fill ───────────────────────────────
+     The CSS loop moves a track containing two identical rows by -50%.
+     That is seamless only when ONE row is at least as wide as the viewport.
+     On ultrawide screens the environment-domain copy is shorter than the
+     viewport, so the end of the second row becomes visible as empty space.
+
+     Repeat each row's original sequence until one row covers the viewport.
+     Both rows receive the same number of copies, preserving the exact -50%
+     seam. Generated copies are hidden from accessibility APIs because the
+     repeated text is presentation, not additional content. */
+  function fillMarqueeRows(selector) {
+    var rows = Array.prototype.slice.call(document.querySelectorAll(selector));
+    if (!rows.length) return;
+
+    rows.forEach(function (row) {
+      Array.prototype.forEach.call(row.querySelectorAll('[data-marquee-clone]'), function (clone) {
+        clone.remove();
+      });
+    });
+
+    var baseWidth = rows[0].scrollWidth;
+    if (!baseWidth) return;
+    var copies = Math.max(1, Math.ceil(window.innerWidth / baseWidth));
+
+    rows.forEach(function (row) {
+      var originals = Array.prototype.slice.call(row.children);
+      for (var copy = 1; copy < copies; copy += 1) {
+        originals.forEach(function (node) {
+          var clone = node.cloneNode(true);
+          clone.setAttribute('data-marquee-clone', '');
+          clone.setAttribute('aria-hidden', 'true');
+          row.appendChild(clone);
+        });
+      }
+    });
+  }
+
+  function fillMarquees() {
+    fillMarqueeRows('.hb-row');
+    fillMarqueeRows('.ticker-row');
+  }
+
+  if (!reduce) {
+    fillMarquees();
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(fillMarquees);
+    }
+    var marqueeResizeQueued = false;
+    window.addEventListener('resize', function () {
+      if (marqueeResizeQueued) return;
+      marqueeResizeQueued = true;
+      requestAnimationFrame(function () {
+        marqueeResizeQueued = false;
+        fillMarquees();
+      });
+    }, { passive: true });
+  }
+
   /* ── mobile nav ──────────────────────────────────────── */
   var toggle = document.getElementById('navToggle');
   var nav = document.querySelector('.site-nav');
