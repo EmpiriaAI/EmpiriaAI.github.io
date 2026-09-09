@@ -27,15 +27,24 @@
 (function () {
   'use strict';
 
+  if (new URL(location.href).searchParams.get('embed') === '1') {
+    document.documentElement.classList.add('is-embedded');
+    document.addEventListener('keydown', function (event) {
+      if (event.key === 'Escape' && window.parent !== window) {
+        window.parent.postMessage({ type: 'empiria-exit-timeline-fullscreen' }, '*');
+      }
+    });
+  }
+
   var IN_TYPES   = { system: 1, context: 1, user: 1, tool_result: 1 };
   var STANDALONE = { system: 1, context: 1, user: 1 };
   var HEAD_TYPES = { thinking: 1, assistant: 1 };
   var BAD = { error: 1, timeout: 1, rejected: 1 };
 
   var LABEL = {
-    system: 'System prompt', context: '注入上下文', inject: '每轮注入',
-    user: '用户', interrupt: '用户中断', notify: '后台通知', command: '斜杠命令',
-    tool_result: '工具结果', thinking: '推理', assistant: '助手输出', tool_call: '工具调用'
+    system: 'System prompt', context: 'Injected context', inject: 'Turn injection',
+    user: 'Human', interrupt: 'User interrupt', notify: 'Background signal', command: 'Slash command',
+    tool_result: 'Tool result', thinking: 'Reasoning', assistant: 'Assistant', tool_call: 'Tool call'
   };
 
   /* The exported `user` and `system` streams are not what their names say.
@@ -70,7 +79,7 @@
   }
 
   var OPEN_BY_DEFAULT = { user: 1, assistant: 1 };
-  var TAGS = ['卡住', '重复劳动', '工具误用', '环境问题', '判分问题', '好样本', '可出题'];
+  var TAGS = ['Blocked', 'Repeated work', 'Tool misuse', 'Environment issue', 'Scoring issue', 'Good sample', 'Task candidate'];
 
   var STORE = {
     theme:   'empiria.dlg.theme',
@@ -160,7 +169,7 @@
     if (mode === 'system') document.documentElement.removeAttribute('data-theme');
     else document.documentElement.setAttribute('data-theme', mode);
     el.themeToggle.textContent = THEME_GLYPH[mode];
-    el.themeToggle.title = '外观：' + ({ system: '跟随系统', light: '浅色', dark: '深色' })[mode];
+    el.themeToggle.title = 'Theme: ' + ({ system: 'system', light: 'light', dark: 'dark' })[mode];
     writeStore(STORE.theme, mode);
   }
   el.themeToggle.addEventListener('click', function () {
@@ -171,7 +180,7 @@
 
   function applyDensity(mode) {
     document.documentElement.setAttribute('data-density', mode);
-    el.densityToggle.title = '行距：' + (mode === 'compact' ? '紧凑' : '舒适');
+    el.densityToggle.title = 'Density: ' + (mode === 'compact' ? 'compact' : 'comfortable');
     writeStore(STORE.density, mode);
   }
   el.densityToggle.addEventListener('click', function () {
@@ -223,14 +232,14 @@
   function buildBody(card, event) {
     var body = make('div', 'dlg-body');
     if (event.type === 'tool_call') {
-      body.appendChild(make('p', 'dlg-sub', '参数'));
+      body.appendChild(make('p', 'dlg-sub', 'Arguments'));
       body.appendChild(make('pre', 'dlg-pre', pretty(event.content)));
     } else if (event.type === 'tool_result') {
       if (event.summary) {
-        body.appendChild(make('p', 'dlg-sub', '摘要'));
+        body.appendChild(make('p', 'dlg-sub', 'Summary'));
         body.appendChild(make('p', null, event.summary));
       }
-      body.appendChild(make('p', 'dlg-sub', '原始输出'));
+      body.appendChild(make('p', 'dlg-sub', 'Raw output'));
       body.appendChild(make('pre', 'dlg-pre raw', event.content || ''));
     } else if (event.type === 'system' || event.type === 'context') {
       body.appendChild(make('pre', 'dlg-pre raw', event.content || ''));
@@ -383,7 +392,7 @@
         var solo = newBand(isUser ? 'is-chapter' : null);
         solo._turn = turn;
         if (isUser) {
-          var rule = make('div', 'dlg-chapter-rule', '轮次 ' + turn);
+          var rule = make('div', 'dlg-chapter-rule', 'Turn ' + turn);
           rule.style.gridRow = '1';
           solo.appendChild(rule);
           solo._offset = 1;
@@ -430,7 +439,7 @@
         callNumbers[call.toolCallId] = nextCall;
         var result = call.toolCallId && byId[call.toolCallId];
         if (result) used[call.toolCallId] = 1;
-        var callCard = buildCard(call, calls.length > 1 ? '并行 ' + (j + 1) + '/' + calls.length : null);
+        var callCard = buildCard(call, calls.length > 1 ? 'Parallel ' + (j + 1) + '/' + calls.length : null);
         var resultCard = result ? buildCard(result) : null;
         callCard._call = nextCall;
         if (resultCard) resultCard._call = nextCall;
@@ -483,11 +492,11 @@
   function metrics(trajectory) {
     var usage = trajectory.tokenUsage || {};
     var rows = [
-      ['事件', trajectory.eventCount || (trajectory.events || []).length],
-      ['工具调用', trajectory.toolCallCount != null ? trajectory.toolCallCount : '—'],
-      ['错误率', trajectory.errorRate != null ? (trajectory.errorRate * 100).toFixed(1) + '%' : '—'],
+      ['Events', trajectory.eventCount || (trajectory.events || []).length],
+      ['Tool calls', trajectory.toolCallCount != null ? trajectory.toolCallCount : '—'],
+      ['Error rate', trajectory.errorRate != null ? (trajectory.errorRate * 100).toFixed(1) + '%' : '—'],
       ['Tokens', tokens(usage.total || trajectory.estimatedTokens)],
-      ['价值档', trajectory.valueTier || '—']
+      ['Value tier', trajectory.valueTier || '—']
     ];
     el.runMetrics.textContent = '';
     rows.forEach(function (pair) {
@@ -518,18 +527,18 @@
     var pipeline = trajectory.pipelineDetail || {};
     el.sourceBody.textContent = '';
 
-    el.sourceBody.appendChild(factGroup('运行来源', [
-      ['轨迹 ID', keyOf(trajectory)],
-      ['会话 ID', env.conversationId],
-      ['请求 ID', env.requestId || usage.requestId],
+    el.sourceBody.appendChild(factGroup('Run source', [
+      ['Trajectory ID', keyOf(trajectory)],
+      ['Conversation ID', env.conversationId],
+      ['Request ID', env.requestId || usage.requestId],
       ['Runtime', env.runtime],
-      ['模型', env.model || trajectory.model],
-      ['服务层级', env.serviceTier || usage.serviceTier],
-      ['来源文件', env.sourceFile],
-      ['数据源', trajectory.dataSource],
-      ['判定器', env.verifier],
-      ['结果', env.outcome || trajectory.situation],
-      ['快照', env.snapshot || trajectory.snapshotLabel]
+      ['Model', env.model || trajectory.model],
+      ['Service tier', env.serviceTier || usage.serviceTier],
+      ['Source file', env.sourceFile],
+      ['Data source', trajectory.dataSource],
+      ['Verifier', env.verifier],
+      ['Outcome', env.outcome || trajectory.situation],
+      ['Snapshot', env.snapshot || trajectory.snapshotLabel]
     ]));
 
     if (usage.total) {
@@ -541,33 +550,33 @@
         piece.style.width = ((usage[spec[0]] || 0) / usage.total * 100) + '%';
         bar.appendChild(piece);
       });
-      el.sourceBody.appendChild(factGroup('Token 账', [
-        ['总计', usage.total.toLocaleString()],
-        ['缓存输入', (usage.cachedInput || 0).toLocaleString()],
-        ['未缓存输入', (usage.uncachedInput || 0).toLocaleString()],
-        ['缓存写入', (usage.cacheWrite || 0).toLocaleString()],
-        ['输出', (usage.output || 0).toLocaleString()],
-        ['推理 tokens', (usage.thinkingTokens || 0).toLocaleString()],
-        ['计量来源', usage.source]
+      el.sourceBody.appendChild(factGroup('Token usage', [
+        ['Total', usage.total.toLocaleString()],
+        ['Cached input', (usage.cachedInput || 0).toLocaleString()],
+        ['Uncached input', (usage.uncachedInput || 0).toLocaleString()],
+        ['Cache write', (usage.cacheWrite || 0).toLocaleString()],
+        ['Output', (usage.output || 0).toLocaleString()],
+        ['Reasoning tokens', (usage.thinkingTokens || 0).toLocaleString()],
+        ['Metering source', usage.source]
       ], bar));
     }
 
     if (env.taskSummary) {
-      el.sourceBody.appendChild(factGroup('任务摘要', [['交付物', env.taskSummary, true]]));
+      el.sourceBody.appendChild(factGroup('Task summary', [['Deliverable', env.taskSummary, true]]));
     }
 
     if (pipeline.classification) {
       var c = pipeline.classification, q = pipeline.quality || {}, d = pipeline.difficulty || {};
       var seg = pipeline.segmentSummary || {}, routing = pipeline.routing || {};
-      el.sourceBody.appendChild(factGroup('质量流水线', [
-        ['任务类型', c.taskType], ['结果判定', c.situation],
-        ['价值档', routing.valueTier], ['路由类别', routing.effectiveCategory],
-        ['质量', q.flag], ['最长错误链', q.maxErrorChain],
-        ['无进展步数', q.maxNoProgress], ['重复比', q.repeatRatio],
-        ['难度', d.flag], ['高质量片段比', seg.highQualityRatio != null ? (seg.highQualityRatio * 100).toFixed(1) + '%' : null],
-        ['分段数', seg.segmentCount],
-        ['分类理由', c.taskTypeReasoning, true],
-        ['判定理由', c.situationReasoning, true]
+      el.sourceBody.appendChild(factGroup('Quality pipeline', [
+        ['Task type', c.taskType], ['Outcome', c.situation],
+        ['Value tier', routing.valueTier], ['Routing category', routing.effectiveCategory],
+        ['Quality', q.flag], ['Longest error chain', q.maxErrorChain],
+        ['No-progress steps', q.maxNoProgress], ['Repeat ratio', q.repeatRatio],
+        ['Difficulty', d.flag], ['High-quality ratio', seg.highQualityRatio != null ? (seg.highQualityRatio * 100).toFixed(1) + '%' : null],
+        ['Segments', seg.segmentCount],
+        ['Classification reasoning', c.taskTypeReasoning, true],
+        ['Outcome reasoning', c.situationReasoning, true]
       ]));
     }
   }
@@ -687,7 +696,7 @@
     el.cfgBase.value = cfg.base || '';
     el.cfgModel.value = cfg.model || '';
     el.cfgKey.value = cfg.key || '';
-    el.endpointState.textContent = cfg.key ? (cfg.model || '已配置') : '未配置 · 只组装不发送';
+    el.endpointState.textContent = cfg.key ? (cfg.model || 'Configured') : 'Not configured · assemble only';
     el.endpointState.className = cfg.key ? 'ok' : '';
   }
   el.cfgSave.addEventListener('click', function () {
@@ -722,7 +731,7 @@
 
   function addMessage(role, text) {
     var wrap = make('div', 'dlg-msg' + (role === 'me' ? ' me' : ''));
-    wrap.appendChild(make('span', 'role', role === 'me' ? '我' : role === 'sys' ? '系统' : 'AI'));
+    wrap.appendChild(make('span', 'role', role === 'me' ? 'You' : role === 'sys' ? 'System' : 'AI'));
     var body = make('p');
     /* [bN] and #N in a reply jump to that place in the trajectory */
     String(text).split(/(\[b\d+\]|#\d+)/).forEach(function (piece) {
@@ -756,10 +765,10 @@
 
     if (!cfg.key) {
       addMessage('sys',
-        '未配置 API Key，请求体已组装但未发送（' +
-        (JSON.stringify(body).length / 1024).toFixed(1) + ' KB，约 ' +
-        (JSON.stringify(body).length / 2.2 / 1000).toFixed(1) + 'k tok）。\n' +
-        '点「导出请求体」可下载，交给后端转发；或在接口设置里填 Key 直连。');
+        'No API key is configured. The request was assembled but not sent (' +
+        (JSON.stringify(body).length / 1024).toFixed(1) + ' KB, about ' +
+        (JSON.stringify(body).length / 2.2 / 1000).toFixed(1) + 'k tokens).\n' +
+        'Export the request for a backend relay, or add a key in Endpoint settings.');
       return;
     }
 
@@ -774,12 +783,12 @@
         var text = data && data.choices && data.choices[0] &&
           data.choices[0].message && data.choices[0].message.content;
         pending.remove();
-        addMessage('ai', text || ('没有返回内容：' + JSON.stringify(data).slice(0, 400)));
+        addMessage('ai', text || ('No response content: ' + JSON.stringify(data).slice(0, 400)));
       })
       .catch(function (err) {
         pending.remove();
-        addMessage('sys', '请求失败：' + err.message +
-          '\n（静态页直连需要中转站允许跨域；否则走后端转发。）');
+        addMessage('sys', 'Request failed: ' + err.message +
+          '\n(Direct access from a static page requires CORS support; otherwise use a backend relay.)');
       });
   }
 
@@ -1018,7 +1027,7 @@
      trajectories costs no snapshot fetch — the bodies stay lazy. */
 
   var BAD_STATUSES = ['error', 'timeout', 'rejected'];
-  var FAIL_LABEL = { error: '错误', timeout: '超时', rejected: '拒绝' };
+  var FAIL_LABEL = { error: 'error', timeout: 'timeout', rejected: 'rejected' };
 
   function statusCountsOf(trajectory) {
     if (trajectory.statusCounts) return trajectory.statusCounts;
@@ -1180,9 +1189,9 @@
     var totalResults = rows.reduce(function (sum, row) {
       return sum + Object.keys(row.counts).reduce(function (n, k) { return n + row.counts[k]; }, 0);
     }, 0);
-    el.overviewSummary.textContent = rows.length + ' 条轨迹 · ' +
-      rows.reduce(function (sum, row) { return sum + row.events; }, 0).toLocaleString() + ' 个事件 · ' +
-      totalFails + ' / ' + totalResults + ' 次工具调用失败';
+    el.overviewSummary.textContent = rows.length + ' trajectories · ' +
+      rows.reduce(function (sum, row) { return sum + row.events; }, 0).toLocaleString() + ' events · ' +
+      totalFails + ' / ' + totalResults + ' failed tool calls';
 
     Array.prototype.forEach.call(el.ovTable.querySelectorAll('th'), function (th) {
       if (th.dataset.sort === key) th.setAttribute('aria-sort', dir === 1 ? 'ascending' : 'descending');
@@ -1251,7 +1260,7 @@
     state.hidden[button.dataset.type] = button.getAttribute('aria-pressed') !== 'true';
   });
   paintConfig();
-  el.pickerMeta.textContent = trajectories.length + ' 条';
+  el.pickerMeta.textContent = trajectories.length + ' runs';
 
   var wanted = new URL(location.href).searchParams.get('run');
   var start = wanted && trajectories.filter(function (t) {

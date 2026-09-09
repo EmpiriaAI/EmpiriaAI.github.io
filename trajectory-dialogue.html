@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -10,7 +10,7 @@
 <link rel="preload" href="fonts/space-grotesk.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="fonts/inter-tight.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="fonts/jetbrains-mono.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="trajectory-dialogue.css">
+<link rel="stylesheet" href="trajectory-dialogue.css?v=20260909-reader-polish">
 </head>
 <body>
 
@@ -28,33 +28,33 @@
 
   <div class="dlg-picker">
     <button type="button" id="pickerButton" aria-expanded="false">
-      <b id="pickerLabel">选择轨迹</b>
-      <small id="pickerMeta">45 条</small>
+      <b id="pickerLabel">Select trajectory</b>
+      <small id="pickerMeta">45 runs</small>
       <i aria-hidden="true">▾</i>
     </button>
     <div class="dlg-picker-panel" id="pickerPanel" hidden>
       <label class="dlg-picker-search">
-        <input id="pickerSearch" type="search" placeholder="标题、ID、任务类型、模型…" autocomplete="off">
+        <input id="pickerSearch" type="search" placeholder="Title, ID, task type, model…" autocomplete="off">
       </label>
       <div class="dlg-picker-list" id="pickerList"></div>
     </div>
   </div>
 
   <div class="dlg-topbar-tools">
-    <button type="button" class="dlg-tool" id="overviewToggle" aria-pressed="false">总览 <b id="overviewCount">0</b></button>
-    <button type="button" class="dlg-tool" data-rail="source" aria-pressed="false">运行来源</button>
-    <button type="button" class="dlg-tool" data-rail="agent"  aria-pressed="false">AI 助手</button>
-    <button type="button" class="dlg-tool" data-rail="notes"  aria-pressed="false">标注 <b id="noteCount">0</b></button>
-    <button type="button" class="dlg-tool icon" id="densityToggle" title="切换行距">⇕</button>
-    <button type="button" class="dlg-tool icon" id="themeToggle" title="切换明暗">◐</button>
-    <a class="dlg-alt-link" href="trajectory-explorer.html">线性视图 →</a>
+    <button type="button" class="dlg-tool" id="overviewToggle" aria-pressed="false">Overview <b id="overviewCount">0</b></button>
+    <button type="button" class="dlg-tool" data-rail="source" aria-pressed="false">Run source</button>
+    <button type="button" class="dlg-tool" data-rail="agent"  aria-pressed="false">AI analysis</button>
+    <button type="button" class="dlg-tool" data-rail="notes"  aria-pressed="false">Notes <b id="noteCount">0</b></button>
+    <button type="button" class="dlg-tool icon" id="densityToggle" title="Toggle density">⇕</button>
+    <button type="button" class="dlg-tool icon" id="themeToggle" title="Toggle theme">◐</button>
+    <a class="dlg-alt-link" href="trajectory-explorer.html">Linear view →</a>
   </div>
 </header>
 
 <section class="dlg-runhead">
   <div class="dlg-runhead-main">
     <p class="dlg-kicker" id="runKicker">Feedback</p>
-    <h1 id="runTitle">加载中…</h1>
+    <h1 id="runTitle">Loading…</h1>
     <p class="dlg-runsub" id="runSub">—</p>
   </div>
   <dl class="dlg-metrics" id="runMetrics"></dl>
@@ -62,29 +62,29 @@
 
 <div class="dlg-controls">
   <div class="dlg-lane-legend">
-    <span class="lane-in">左栏 · 喂给模型的 <b id="countIn">0</b></span>
-    <span class="lane-axis" aria-hidden="true">时间轴</span>
-    <span class="lane-out"><b id="countOut">0</b> 模型产出的 · 右栏</span>
+    <span class="lane-in"><small>INPUT</small> Fed to the model <b id="countIn">0</b></span>
+    <span class="lane-axis" aria-hidden="true">TURN</span>
+    <span class="lane-out"><small>OUTPUT</small> Produced by the model <b id="countOut">0</b></span>
   </div>
   <div class="dlg-filters" id="filters">
-    <button type="button" data-type="system"      aria-pressed="true">系统提示 <b>0</b></button>
-    <button type="button" data-type="context"     aria-pressed="true">上下文 <b>0</b></button>
-    <button type="button" data-type="inject"      aria-pressed="false">每轮注入 <b>0</b></button>
-    <button type="button" data-type="user"        aria-pressed="true">真人 <b>0</b></button>
-    <button type="button" data-type="signal"      aria-pressed="true">中断·回调 <b>0</b></button>
-    <button type="button" data-type="tool_result" aria-pressed="true">结果 <b>0</b></button>
+    <button type="button" data-type="system"      aria-pressed="true">System <b>0</b></button>
+    <button type="button" data-type="context"     aria-pressed="true">Context <b>0</b></button>
+    <button type="button" data-type="inject"      aria-pressed="false">Injections <b>0</b></button>
+    <button type="button" data-type="user"        aria-pressed="true">Human <b>0</b></button>
+    <button type="button" data-type="signal"      aria-pressed="true">Signals <b>0</b></button>
+    <button type="button" data-type="tool_result" aria-pressed="true">Results <b>0</b></button>
     <span class="dlg-filter-split" aria-hidden="true"></span>
-    <button type="button" data-type="thinking"    aria-pressed="true">推理 <b>0</b></button>
-    <button type="button" data-type="assistant"   aria-pressed="true">助手输出 <b>0</b></button>
-    <button type="button" data-type="tool_call"   aria-pressed="true">工具调用 <b>0</b></button>
+    <button type="button" data-type="thinking"    aria-pressed="true">Reasoning <b>0</b></button>
+    <button type="button" data-type="assistant"   aria-pressed="true">Assistant <b>0</b></button>
+    <button type="button" data-type="tool_call"   aria-pressed="true">Tool calls <b>0</b></button>
   </div>
   <div class="dlg-actions">
-    <button type="button" id="failOnly" aria-pressed="false" class="danger">只看失败 <b id="failCount">0</b></button>
-    <label class="dlg-search"><input id="search" type="search" placeholder="搜索消息、命令、输出…  ⌘K"></label>
-    <button type="button" id="expandAll">全展开</button>
-    <button type="button" id="collapseAll">全折叠</button>
-    <span class="dlg-selection" id="selectionInfo" hidden>已选 <b id="selectionCount">0</b> 步
-      <button type="button" id="selectionClear">清除</button>
+    <button type="button" id="failOnly" aria-pressed="false" class="danger">Failures only <b id="failCount">0</b></button>
+    <label class="dlg-search"><input id="search" type="search" placeholder="Search messages, commands, output…  ⌘K"></label>
+    <button type="button" id="expandAll">Expand all</button>
+    <button type="button" id="collapseAll">Collapse all</button>
+    <span class="dlg-selection" id="selectionInfo" hidden><b id="selectionCount">0</b> steps selected
+      <button type="button" id="selectionClear">Clear</button>
     </span>
   </div>
 </div>
@@ -93,34 +93,34 @@
   <header class="dlg-overview-head">
     <div>
       <p class="dlg-kicker">Corpus</p>
-      <h1>全部轨迹</h1>
+      <h1>All trajectories</h1>
       <p class="dlg-runsub" id="overviewSummary">—</p>
-      <p class="dlg-legend">失败标记
-        <span class="dlg-fail-chip error">n</span> 错误
-        <span class="dlg-fail-chip timeout">n</span> 超时
-        <span class="dlg-fail-chip rejected">n</span> 拒绝
+      <p class="dlg-legend">Failure markers
+        <span class="dlg-fail-chip error">n</span> error
+        <span class="dlg-fail-chip timeout">n</span> timeout
+        <span class="dlg-fail-chip rejected">n</span> rejected
       </p>
     </div>
     <div class="dlg-overview-filters">
-      <label class="dlg-search"><input id="ovSearch" type="search" placeholder="标题、ID、任务类型…"></label>
-      <select id="ovModel"><option value="">全部模型</option></select>
-      <select id="ovTask"><option value="">全部任务类型</option></select>
-      <button type="button" id="ovDedupe" aria-pressed="false">每会话只留最长快照</button>
+      <label class="dlg-search"><input id="ovSearch" type="search" placeholder="Title, ID, task type…"></label>
+      <select id="ovModel"><option value="">All models</option></select>
+      <select id="ovTask"><option value="">All task types</option></select>
+      <button type="button" id="ovDedupe" aria-pressed="false">Longest snapshot per session</button>
     </div>
   </header>
   <div class="dlg-table-wrap">
     <table class="dlg-table" id="ovTable">
       <thead>
         <tr>
-          <th data-sort="title">轨迹</th>
-          <th data-sort="taskType">任务类型</th>
-          <th data-sort="model">模型</th>
-          <th class="num" data-sort="events">事件</th>
-          <th class="num" data-sort="calls">工具调用</th>
-          <th class="num" data-sort="fails">失败</th>
-          <th class="num" data-sort="failRate">失败率</th>
-          <th class="num" data-sort="turns">真人轮次</th>
-          <th data-sort="tier">价值档</th>
+          <th data-sort="title">Trajectory</th>
+          <th data-sort="taskType">Task type</th>
+          <th data-sort="model">Model</th>
+          <th class="num" data-sort="events">Events</th>
+          <th class="num" data-sort="calls">Tool calls</th>
+          <th class="num" data-sort="fails">Failures</th>
+          <th class="num" data-sort="failRate">Failure rate</th>
+          <th class="num" data-sort="turns">Human turns</th>
+          <th data-sort="tier">Value tier</th>
           <th class="num" data-sort="tokens">Tokens</th>
         </tr>
       </thead>
@@ -131,18 +131,18 @@
 
 <main class="dlg-stage">
   <div class="dlg-lanes" id="lanes" aria-live="polite"></div>
-  <p class="dlg-empty" id="empty" hidden>没有匹配的事件。</p>
+  <p class="dlg-empty" id="empty" hidden>No events match the current filters.</p>
   <div class="dlg-minimap" id="minimap" aria-hidden="true"></div>
 </main>
 
-<aside class="dlg-rail" id="rail" hidden aria-label="侧栏">
+<aside class="dlg-rail" id="rail" hidden aria-label="Analysis rail">
   <header class="dlg-rail-head">
     <nav class="dlg-rail-tabs" id="railTabs">
-      <button type="button" data-rail="source" aria-pressed="true">运行来源</button>
-      <button type="button" data-rail="agent"  aria-pressed="false">AI 助手</button>
-      <button type="button" data-rail="notes"  aria-pressed="false">标注</button>
+      <button type="button" data-rail="source" aria-pressed="true">Run source</button>
+      <button type="button" data-rail="agent"  aria-pressed="false">AI analysis</button>
+      <button type="button" data-rail="notes"  aria-pressed="false">Notes</button>
     </nav>
-    <button type="button" class="dlg-rail-close" id="railClose" aria-label="关闭侧栏">×</button>
+    <button type="button" class="dlg-rail-close" id="railClose" aria-label="Close rail">×</button>
   </header>
 
   <!-- ── 运行来源 ─────────────────────────────────────── -->
@@ -153,62 +153,62 @@
   <!-- ── AI 助手 ──────────────────────────────────────── -->
   <section class="dlg-rail-panel" data-rail="agent" hidden>
     <details class="dlg-endpoint" id="endpointBox">
-      <summary>接口设置 <span id="endpointState">未配置</span></summary>
+      <summary>Endpoint settings <span id="endpointState">Not configured</span></summary>
       <label>Base URL<input id="cfgBase" type="text" placeholder="https://colabapi.com/v1" spellcheck="false"></label>
-      <label>模型<input id="cfgModel" type="text" placeholder="gpt-5.4" spellcheck="false"></label>
+      <label>Model<input id="cfgModel" type="text" placeholder="gpt-5.4" spellcheck="false"></label>
       <label>API Key<input id="cfgKey" type="password" placeholder="sk-…" autocomplete="off" spellcheck="false"></label>
-      <p class="dlg-note">只存本浏览器 <code>localStorage</code>，不写进仓库、不随页面发布。留空则只组装请求体并打印，交给后端接管。</p>
+      <p class="dlg-note">Stored only in this browser's <code>localStorage</code>. It is never committed or published. Leave the key empty to assemble an exportable request without sending it.</p>
       <div class="dlg-inline-actions">
-        <button type="button" id="cfgSave">保存</button>
-        <button type="button" id="cfgClear">清除 Key</button>
-        <button type="button" id="cfgDump">导出请求体</button>
+        <button type="button" id="cfgSave">Save</button>
+        <button type="button" id="cfgClear">Clear key</button>
+        <button type="button" id="cfgDump">Export request</button>
       </div>
     </details>
 
     <div class="dlg-presets" id="presets">
-      <button type="button" data-preset="summary">摘要这条轨迹</button>
-      <button type="button" data-preset="stuck">卡在哪 · 为什么失败</button>
-      <button type="button" data-preset="repeat">找重复劳动</button>
-      <button type="button" data-preset="task">做成一道题</button>
+      <button type="button" data-preset="summary">Summarize trajectory</button>
+      <button type="button" data-preset="stuck">Find failure points</button>
+      <button type="button" data-preset="repeat">Find repeated work</button>
+      <button type="button" data-preset="task">Turn into a task</button>
     </div>
 
     <div class="dlg-scope" id="scopeBar">
-      <span>上下文</span>
-      <button type="button" data-scope="L1"  aria-pressed="true">骨架</button>
-      <button type="button" data-scope="L2"  aria-pressed="false">带摘要</button>
-      <button type="button" data-scope="SEL" aria-pressed="false">仅选中</button>
+      <span>Context</span>
+      <button type="button" data-scope="L1"  aria-pressed="true">Skeleton</button>
+      <button type="button" data-scope="L2"  aria-pressed="false">Summaries</button>
+      <button type="button" data-scope="SEL" aria-pressed="false">Selected</button>
       <small id="scopeCost">≈ 0k tok</small>
     </div>
 
     <div class="dlg-chat" id="chat"></div>
 
     <form class="dlg-composer" id="composer">
-      <textarea id="composerInput" rows="2" placeholder="问点什么…  ⌘↵ 发送"></textarea>
-      <button type="submit">发送</button>
+      <textarea id="composerInput" rows="2" placeholder="Ask about this trajectory…  ⌘↵"></textarea>
+      <button type="submit">Send</button>
     </form>
   </section>
 
   <!-- ── 标注 ─────────────────────────────────────────── -->
   <section class="dlg-rail-panel" data-rail="notes" hidden>
-    <p class="dlg-note" id="noteHint">点时间线上任意一步的轴点即可选中（⇧ 点选范围），然后在这里打标签、写备注。</p>
+    <p class="dlg-note" id="noteHint">Select a step from the timeline axis. Shift-click extends the selection, then add tags or notes here.</p>
     <div id="noteForm" hidden>
-      <p class="dlg-sub">已选 <b id="noteTarget">—</b></p>
+      <p class="dlg-sub">Selected <b id="noteTarget">—</b></p>
       <div class="dlg-tagrow" id="tagRow"></div>
-      <textarea id="noteText" rows="4" placeholder="这一步的问题 / 结论…"></textarea>
+      <textarea id="noteText" rows="4" placeholder="Observation or conclusion…"></textarea>
       <div class="dlg-inline-actions">
-        <button type="button" id="noteSave">保存标注</button>
-        <button type="button" id="noteDelete">删除</button>
+        <button type="button" id="noteSave">Save note</button>
+        <button type="button" id="noteDelete">Delete</button>
       </div>
     </div>
     <div class="dlg-note-list" id="noteList"></div>
     <div class="dlg-inline-actions">
-      <button type="button" id="noteExport">导出 JSONL</button>
+      <button type="button" id="noteExport">Export JSONL</button>
     </div>
   </section>
 </aside>
 
 <script src="trajectory-data.js"></script>
 <script src="feedback-snapshot-index.js"></script>
-<script src="trajectory-dialogue.js"></script>
+<script src="trajectory-dialogue.js?v=20260909-reader-polish"></script>
 </body>
 </html>

@@ -8,9 +8,14 @@
   var activeCategory = 'feedback';
   var highQualityOnly = false;
   var deduplicateSessions = false;
+  var timelineMode = 'linear';
+  var timelineFullscreen = false;
+  var sidebarVisible = true;
+  var pageScrollY = 0;
   var activeFilters = new Set(['user', 'thinking', 'assistant', 'tool_call', 'tool_result']);
   var elements = {
     topCategoryNav: document.getElementById('topCategoryNav'),
+    main: document.querySelector('.trajectory-main'),
     sidebar: document.getElementById('analyticsSidebar'),
     sidebarGroups: document.getElementById('sidebarGroups'),
     sidebarRunCount: document.getElementById('sidebarRunCount'),
@@ -32,7 +37,14 @@
     runSearch: document.getElementById('runSearch'),
     search: document.getElementById('trajectorySearch'),
     filters: document.getElementById('trajectoryFilters'),
+    timelineWorkspace: document.getElementById('timelineWorkspace'),
+    timelineToolbar: document.getElementById('timelineToolbar'),
     timeline: document.getElementById('rawTimeline'),
+    linearViewButton: document.getElementById('linearViewButton'),
+    dialogueViewButton: document.getElementById('dialogueViewButton'),
+    embeddedDialogue: document.getElementById('embeddedDialogue'),
+    dialogueFrame: document.getElementById('dialogueFrame'),
+    timelineFullscreen: document.getElementById('timelineFullscreen'),
     empty: document.getElementById('rawEmpty'),
     expand: document.getElementById('expandVisible'),
     collapse: document.getElementById('collapseAll'),
@@ -141,6 +153,57 @@
 
   function selectedTrajectory() {
     return trajectories[selectedIndex];
+  }
+
+  function dialogueKey(trajectory) {
+    return (trajectory.shortId || trajectory.id) +
+      (trajectory.snapshotOrdinal ? '-s' + trajectory.snapshotOrdinal : '');
+  }
+
+  function dialogueUrl(trajectory) {
+    return 'trajectory-dialogue.html?embed=1&run=' + encodeURIComponent(dialogueKey(trajectory));
+  }
+
+  function syncDialogue(trajectory) {
+    var url = dialogueUrl(trajectory);
+    elements.dialogueFrame.dataset.src = url;
+    if (timelineMode === 'dialogue' && elements.dialogueFrame.getAttribute('src') !== url) {
+      elements.dialogueFrame.src = url;
+    }
+  }
+
+  function setTimelineMode(mode) {
+    timelineMode = mode === 'dialogue' ? 'dialogue' : 'linear';
+    var dialogue = timelineMode === 'dialogue';
+    elements.linearViewButton.setAttribute('aria-pressed', String(!dialogue));
+    elements.dialogueViewButton.setAttribute('aria-pressed', String(dialogue));
+    elements.timeline.hidden = dialogue;
+    elements.embeddedDialogue.hidden = !dialogue;
+    elements.timelineToolbar.hidden = dialogue;
+    if (dialogue) {
+      elements.empty.hidden = true;
+      syncDialogue(selectedTrajectory());
+      text('timelineStatus', 'Two-lane view');
+    } else {
+      renderTimeline();
+    }
+  }
+
+  function setSidebarVisible(visible) {
+    sidebarVisible = visible;
+    var mobile = window.innerWidth <= 820;
+    elements.main.classList.toggle('sidebar-collapsed', !visible && !mobile);
+    elements.sidebar.classList.toggle('open', visible && mobile);
+    elements.sidebarOpen.setAttribute('aria-expanded', String(visible));
+  }
+
+  function setTimelineFullscreen(active) {
+    timelineFullscreen = Boolean(active);
+    if (timelineFullscreen) pageScrollY = window.scrollY;
+    document.body.classList.toggle('timeline-fullscreen', timelineFullscreen);
+    elements.timelineFullscreen.setAttribute('aria-pressed', String(timelineFullscreen));
+    elements.timelineFullscreen.firstChild.nodeValue = timelineFullscreen ? 'Exit fullscreen ' : 'Fullscreen ';
+    if (!timelineFullscreen) window.scrollTo(0, pageScrollY);
   }
 
   function loadTrajectoryEvents(trajectory) {
@@ -288,6 +351,7 @@
     badge.className = 'run-status ' + (status.successful ? 'success' : 'error');
     var meta = [trajectory.model, trajectory.agent || env.agent, trajectory.dataSource, trajectory.snapshotLabel, trajectory.id].filter(Boolean);
     document.getElementById('runMetaLine').textContent = meta.join(' · ');
+    syncDialogue(trajectory);
   }
 
   function renderMetrics(trajectory) {
@@ -611,6 +675,12 @@
 
   function renderTimeline() {
     var trajectory = selectedTrajectory();
+    if (timelineMode === 'dialogue') {
+      syncDialogue(trajectory);
+      elements.empty.hidden = true;
+      text('timelineStatus', 'Two-lane view');
+      return;
+    }
     if (!Array.isArray(trajectory.events)) return;
     var qualityMap = highQualityNodeMap(trajectory);
     var query = elements.search.value.trim().toLowerCase();
@@ -674,10 +744,22 @@
     elements.highQualityOnly.setAttribute('aria-pressed', String(highQualityOnly));
     renderTimeline();
   });
+  elements.linearViewButton.addEventListener('click', function () { setTimelineMode('linear'); });
+  elements.dialogueViewButton.addEventListener('click', function () { setTimelineMode('dialogue'); });
+  elements.timelineFullscreen.addEventListener('click', function () { setTimelineFullscreen(!timelineFullscreen); });
   elements.expand.addEventListener('click', function () { Array.prototype.forEach.call(elements.timeline.querySelectorAll('details'), function (node) { node.open = true; }); });
   elements.collapse.addEventListener('click', function () { Array.prototype.forEach.call(elements.timeline.querySelectorAll('details'), function (node) { node.open = false; }); });
-  elements.sidebarOpen.addEventListener('click', function () { elements.sidebar.classList.add('open'); });
-  elements.sidebarClose.addEventListener('click', function () { elements.sidebar.classList.remove('open'); });
+  elements.sidebarOpen.addEventListener('click', function () { setSidebarVisible(true); });
+  elements.sidebarClose.addEventListener('click', function () { setSidebarVisible(false); });
+  document.addEventListener('keydown', function (event) {
+    if (event.key === 'Escape' && timelineFullscreen) setTimelineFullscreen(false);
+  });
+  window.addEventListener('message', function (event) {
+    if (event.data && event.data.type === 'empiria-exit-timeline-fullscreen' && timelineFullscreen) {
+      setTimelineFullscreen(false);
+    }
+  });
+  window.addEventListener('resize', function () { setSidebarVisible(sidebarVisible); }, { passive: true });
 
   renderAll();
 })();
