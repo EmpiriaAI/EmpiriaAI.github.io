@@ -739,3 +739,10 @@ body.rail-open .dlg-minimap { right: calc(var(--rail-w) + 8px); }
 }
 .dlg-legend .dlg-fail-chip { margin-left: 8px; }
 .dlg-table .dlg-fail-chip + .dlg-fail-chip { margin-left: 5px; }
+.dlg-overview-filters button {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 3px;
+  padding: 5px 10px; cursor: pointer; font-family: var(--f-mono);
+  font-size: 10.5px; color: var(--ink-3);
+}
+.dlg-overview-filters button:hover { border-color: var(--line-2); color: var(--ink); }
+.dlg-overview-filters button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent-soft); }

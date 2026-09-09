@@ -93,7 +93,7 @@
    'tagRow', 'noteText', 'noteSave', 'noteDelete', 'noteList', 'noteExport',
    'themeToggle', 'densityToggle', 'selectionInfo', 'selectionCount', 'selectionClear',
    'overview', 'overviewToggle', 'overviewCount', 'overviewSummary', 'ovSearch',
-   'ovModel', 'ovTask', 'ovTable', 'ovBody'
+   'ovModel', 'ovTask', 'ovTable', 'ovBody', 'ovDedupe'
   ].forEach(function (id) { el[id] = document.getElementById(id); });
 
   var state = {
@@ -1079,11 +1079,38 @@
     if (row.taskType) seen[row.taskType] = 1; return seen;
   }, {})));
 
+  /* 42 snapshots cover only 22 conversations: one session is cut into s1..s5
+     and each slice takes a row, so a single conversation can occupy the top of
+     a failure ranking on its own. The rule for which slice survives is the one
+     trajectory-explorer.js already uses, so the two views agree on what "the"
+     run of a session is. */
+  function dedupeSessions(rows) {
+    var best = {};
+    rows.forEach(function (row) {
+      var t = row.trajectory;
+      if (!t.snapshotLabel || !t.conversationId) return;
+      var current = best[t.conversationId];
+      var b = current && current.trajectory;
+      if (!b ||
+          t.messageCount > b.messageCount ||
+          (t.messageCount === b.messageCount && t.eventCount > b.eventCount) ||
+          (t.messageCount === b.messageCount && t.eventCount === b.eventCount &&
+           t.snapshotOrdinal > b.snapshotOrdinal)) {
+        best[t.conversationId] = row;
+      }
+    });
+    return rows.filter(function (row) {
+      var t = row.trajectory;
+      return !t.snapshotLabel || best[t.conversationId] === row;
+    });
+  }
+
   function renderOverview() {
     var needle = el.ovSearch.value.trim().toLowerCase();
     var model = el.ovModel.value;
     var task = el.ovTask.value;
-    var rows = overviewRows.filter(function (row) {
+    var rows = (el.ovDedupe.getAttribute('aria-pressed') === 'true'
+      ? dedupeSessions(overviewRows) : overviewRows).filter(function (row) {
       if (model && row.model !== model) return false;
       if (task && row.taskType !== task) return false;
       if (!needle) return true;
@@ -1168,6 +1195,10 @@
     if (!th) return;
     if (overviewSort.key === th.dataset.sort) overviewSort.dir *= -1;
     else overviewSort = { key: th.dataset.sort, dir: th.classList.contains('num') ? -1 : 1 };
+    renderOverview();
+  });
+  el.ovDedupe.addEventListener('click', function () {
+    this.setAttribute('aria-pressed', String(this.getAttribute('aria-pressed') !== 'true'));
     renderOverview();
   });
   el.ovSearch.addEventListener('input', renderOverview);
