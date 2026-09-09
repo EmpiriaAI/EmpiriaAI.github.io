@@ -7,6 +7,10 @@
 .idea/
 *.swp
 
+# Python runtime cache
+__pycache__/
+*.py[cod]
+
 # Deliberately minimal. This repository is served verbatim by Pages, so
 # anything ignored here is simply absent from the published site. Do NOT
 # paste in a language template: the Python one ignores /site as mkdocs
