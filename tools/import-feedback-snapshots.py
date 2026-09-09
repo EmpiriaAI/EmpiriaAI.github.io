@@ -224,7 +224,7 @@ def build_node_sources(messages: list[dict]) -> dict[int, list[int]]:
     return mapping
 
 
-def build_events(messages: list[dict]) -> tuple[list[dict], dict, dict, dict]:
+def build_events(messages: list[dict]) -> tuple[list[dict], dict, dict, dict, dict]:
     call_names: dict[str, str] = {}
     for message in messages:
         if message.get("role") != "assistant":
@@ -238,6 +238,7 @@ def build_events(messages: list[dict]) -> tuple[list[dict], dict, dict, dict]:
     counts = Counter()
     tool_counts = Counter()
     kind_counts = Counter()
+    status_counts = Counter()
     seen_system = False
     for index, message in enumerate(messages):
         role = message.get("role")
@@ -303,7 +304,8 @@ def build_events(messages: list[dict]) -> tuple[list[dict], dict, dict, dict]:
             })
             counts["tool_result"] += 1
             kind_counts["tool_result"] += 1
-    return events, dict(counts), dict(tool_counts), dict(kind_counts)
+            status_counts[events[-1]["status"]] += 1
+    return events, dict(counts), dict(tool_counts), dict(kind_counts), dict(status_counts)
 
 
 def load_real_usage(raw_dir: Path, request_ids: set[str]) -> dict[str, dict]:
@@ -511,7 +513,7 @@ def main() -> None:
         usage_estimated = usage is None
         if usage_estimated:
             usage = {"total": clean.get("estimated_tokens") or 0, "source": "estimated", "requestId": request_id}
-        events, counts, tool_counts, kind_counts = build_events(messages)
+        events, counts, tool_counts, kind_counts, status_counts = build_events(messages)
         node_sources = build_node_sources(messages)
         pipeline = camel_meta(row, trace, node_sources, dataset)
         task_type = classification.get("task_type") or "other"
@@ -545,6 +547,7 @@ def main() -> None:
             "errorRate": clean.get("error_rate"),
             "counts": counts,
             "kindCounts": kind_counts,
+            "statusCounts": status_counts,
             "toolCounts": tool_counts,
             "eventCount": len(events),
             "events": None,

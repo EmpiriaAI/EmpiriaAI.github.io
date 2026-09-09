@@ -41,6 +41,7 @@
   </div>
 
   <div class="dlg-topbar-tools">
+    <button type="button" class="dlg-tool" id="overviewToggle" aria-pressed="false">总览 <b id="overviewCount">0</b></button>
     <button type="button" class="dlg-tool" data-rail="source" aria-pressed="false">运行来源</button>
     <button type="button" class="dlg-tool" data-rail="agent"  aria-pressed="false">AI 助手</button>
     <button type="button" class="dlg-tool" data-rail="notes"  aria-pressed="false">标注 <b id="noteCount">0</b></button>
@@ -87,6 +88,45 @@
     </span>
   </div>
 </div>
+
+<section class="dlg-overview" id="overview" hidden>
+  <header class="dlg-overview-head">
+    <div>
+      <p class="dlg-kicker">Corpus</p>
+      <h1>全部轨迹</h1>
+      <p class="dlg-runsub" id="overviewSummary">—</p>
+      <p class="dlg-legend">失败标记
+        <span class="dlg-fail-chip error">n</span> 错误
+        <span class="dlg-fail-chip timeout">n</span> 超时
+        <span class="dlg-fail-chip rejected">n</span> 拒绝
+      </p>
+    </div>
+    <div class="dlg-overview-filters">
+      <label class="dlg-search"><input id="ovSearch" type="search" placeholder="标题、ID、任务类型…"></label>
+      <select id="ovModel"><option value="">全部模型</option></select>
+      <select id="ovTask"><option value="">全部任务类型</option></select>
+    </div>
+  </header>
+  <div class="dlg-table-wrap">
+    <table class="dlg-table" id="ovTable">
+      <thead>
+        <tr>
+          <th data-sort="title">轨迹</th>
+          <th data-sort="taskType">任务类型</th>
+          <th data-sort="model">模型</th>
+          <th class="num" data-sort="events">事件</th>
+          <th class="num" data-sort="calls">工具调用</th>
+          <th class="num" data-sort="fails">失败</th>
+          <th class="num" data-sort="failRate">失败率</th>
+          <th class="num" data-sort="turns">真人轮次</th>
+          <th data-sort="tier">价值档</th>
+          <th class="num" data-sort="tokens">Tokens</th>
+        </tr>
+      </thead>
+      <tbody id="ovBody"></tbody>
+    </table>
+  </div>
+</section>
 
 <main class="dlg-stage">
   <div class="dlg-lanes" id="lanes" aria-live="polite"></div>

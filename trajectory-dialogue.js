@@ -91,7 +91,9 @@
    'cfgSave', 'cfgClear', 'cfgDump', 'presets', 'scopeBar', 'scopeCost', 'chat',
    'composer', 'composerInput', 'noteCount', 'noteHint', 'noteForm', 'noteTarget',
    'tagRow', 'noteText', 'noteSave', 'noteDelete', 'noteList', 'noteExport',
-   'themeToggle', 'densityToggle', 'selectionInfo', 'selectionCount', 'selectionClear'
+   'themeToggle', 'densityToggle', 'selectionInfo', 'selectionCount', 'selectionClear',
+   'overview', 'overviewToggle', 'overviewCount', 'overviewSummary', 'ovSearch',
+   'ovModel', 'ovTask', 'ovTable', 'ovBody'
   ].forEach(function (id) { el[id] = document.getElementById(id); });
 
   var state = {
@@ -1006,6 +1008,184 @@
       : failures.filter(function (c) { return c.offsetTop < top - 10; }).pop();
     (next || failures[0]).scrollIntoView({ block: 'center' });
   });
+
+
+  /* ── corpus overview ─────────────────────────────────── */
+
+  /* Finding a bad case is an N→1 funnel and the reader only ever served the
+     1. One row per trajectory, sorted by the columns that separate a bad run
+     from a good one. Failure counts ride in the index, so ranking 45
+     trajectories costs no snapshot fetch — the bodies stay lazy. */
+
+  var BAD_STATUSES = ['error', 'timeout', 'rejected'];
+  var FAIL_LABEL = { error: '错误', timeout: '超时', rejected: '拒绝' };
+
+  function statusCountsOf(trajectory) {
+    if (trajectory.statusCounts) return trajectory.statusCounts;
+    var counts = {};
+    (trajectory.events || []).forEach(function (event) {
+      if (event.type !== 'tool_result') return;
+      var status = event.status || 'success';
+      counts[status] = (counts[status] || 0) + 1;
+    });
+    return counts;
+  }
+
+  function humanTurnsOf(trajectory) {
+    var kinds = trajectory.kindCounts;
+    if (kinds && kinds.user != null) return kinds.user;
+    if (!trajectory.events) return null;
+    return trajectory.events.filter(function (event) {
+      return kindOf(event, true) === 'user';
+    }).length;
+  }
+
+  function overviewRow(trajectory) {
+    var counts = statusCountsOf(trajectory);
+    var total = Object.keys(counts).reduce(function (sum, key) { return sum + counts[key]; }, 0);
+    var fails = BAD_STATUSES.reduce(function (sum, key) { return sum + (counts[key] || 0); }, 0);
+    var usage = trajectory.tokenUsage || {};
+    return {
+      trajectory: trajectory,
+      key: keyOf(trajectory),
+      title: trajectory.title || trajectory.shortId || '',
+      taskType: trajectory.taskType || '',
+      model: trajectory.model || '',
+      events: trajectory.eventCount || (trajectory.events || []).length,
+      calls: trajectory.toolCallCount || 0,
+      counts: counts,
+      fails: fails,
+      failRate: total ? fails / total : 0,
+      turns: humanTurnsOf(trajectory),
+      tier: trajectory.valueTier || '',
+      tokens: usage.total || trajectory.estimatedTokens || 0
+    };
+  }
+
+  var overviewRows = trajectories.map(overviewRow);
+  var overviewSort = { key: 'failRate', dir: -1 };
+
+  function fillSelect(select, values) {
+    values.sort().forEach(function (value) {
+      var option = document.createElement('option');
+      option.value = value; option.textContent = value;
+      select.appendChild(option);
+    });
+  }
+  fillSelect(el.ovModel, Object.keys(overviewRows.reduce(function (seen, row) {
+    if (row.model) seen[row.model] = 1; return seen;
+  }, {})));
+  fillSelect(el.ovTask, Object.keys(overviewRows.reduce(function (seen, row) {
+    if (row.taskType) seen[row.taskType] = 1; return seen;
+  }, {})));
+
+  function renderOverview() {
+    var needle = el.ovSearch.value.trim().toLowerCase();
+    var model = el.ovModel.value;
+    var task = el.ovTask.value;
+    var rows = overviewRows.filter(function (row) {
+      if (model && row.model !== model) return false;
+      if (task && row.taskType !== task) return false;
+      if (!needle) return true;
+      return (row.title + ' ' + row.key + ' ' + row.taskType + ' ' + row.model)
+        .toLowerCase().indexOf(needle) !== -1;
+    });
+
+    var key = overviewSort.key, dir = overviewSort.dir;
+    rows.sort(function (a, b) {
+      var x = a[key], y = b[key];
+      if (typeof x === 'string' || typeof y === 'string') {
+        return String(x).localeCompare(String(y)) * dir;
+      }
+      return ((x == null ? -1 : x) - (y == null ? -1 : y)) * dir;
+    });
+
+    var worst = rows.reduce(function (max, row) { return Math.max(max, row.failRate); }, 0) || 1;
+    el.ovBody.textContent = '';
+    rows.forEach(function (row) {
+      var tr = document.createElement('tr');
+
+      var name = make('td', 'name');
+      name.appendChild(document.createTextNode(row.title));
+      name.appendChild(make('small', null, row.key));
+      tr.appendChild(name);
+
+      tr.appendChild(make('td', 'mono', row.taskType));
+      tr.appendChild(make('td', 'mono', row.model));
+      tr.appendChild(make('td', 'num mono', String(row.events)));
+      tr.appendChild(make('td', 'num mono', String(row.calls)));
+
+      var failCell = make('td', 'num');
+      if (!row.fails) {
+        failCell.appendChild(make('span', 'zero', '0'));
+      } else {
+        /* the number carries the count, the colour carries which kind —
+           spelling out "error/timeout/rejected" three times per row would
+           bury the number the column exists for */
+        BAD_STATUSES.forEach(function (status) {
+          if (!row.counts[status]) return;
+          var chip = make('span', 'dlg-fail-chip ' + status, String(row.counts[status]));
+          chip.title = FAIL_LABEL[status] + ' ' + row.counts[status];
+          failCell.appendChild(chip);
+        });
+      }
+      tr.appendChild(failCell);
+
+      var rate = make('td', 'num rate dlg-rate-cell' + (row.failRate >= 0.05 ? ' hot' : ''));
+      var bar = make('i');
+      bar.style.width = (row.failRate / worst * 46) + 'px';
+      rate.appendChild(bar);
+      rate.appendChild(document.createTextNode((row.failRate * 100).toFixed(1) + '%'));
+      tr.appendChild(rate);
+
+      tr.appendChild(make('td', 'num mono', row.turns == null ? '—' : String(row.turns)));
+      tr.appendChild(make('td', 'mono', row.tier || '—'));
+      tr.appendChild(make('td', 'num mono', tokens(row.tokens)));
+
+      tr.addEventListener('click', function () {
+        showOverview(false);
+        select(row.trajectory);
+      });
+      el.ovBody.appendChild(tr);
+    });
+
+    var totalFails = rows.reduce(function (sum, row) { return sum + row.fails; }, 0);
+    var totalResults = rows.reduce(function (sum, row) {
+      return sum + Object.keys(row.counts).reduce(function (n, k) { return n + row.counts[k]; }, 0);
+    }, 0);
+    el.overviewSummary.textContent = rows.length + ' 条轨迹 · ' +
+      rows.reduce(function (sum, row) { return sum + row.events; }, 0).toLocaleString() + ' 个事件 · ' +
+      totalFails + ' / ' + totalResults + ' 次工具调用失败';
+
+    Array.prototype.forEach.call(el.ovTable.querySelectorAll('th'), function (th) {
+      if (th.dataset.sort === key) th.setAttribute('aria-sort', dir === 1 ? 'ascending' : 'descending');
+      else th.removeAttribute('aria-sort');
+    });
+  }
+
+  el.ovTable.querySelector('thead').addEventListener('click', function (event) {
+    var th = event.target.closest('th');
+    if (!th) return;
+    if (overviewSort.key === th.dataset.sort) overviewSort.dir *= -1;
+    else overviewSort = { key: th.dataset.sort, dir: th.classList.contains('num') ? -1 : 1 };
+    renderOverview();
+  });
+  el.ovSearch.addEventListener('input', renderOverview);
+  el.ovModel.addEventListener('change', renderOverview);
+  el.ovTask.addEventListener('change', renderOverview);
+
+  function showOverview(on) {
+    el.overview.hidden = !on;
+    document.querySelector('.dlg-runhead').hidden = on;
+    document.querySelector('.dlg-controls').hidden = on;
+    document.querySelector('.dlg-stage').hidden = on;
+    el.overviewToggle.setAttribute('aria-pressed', String(on));
+    if (on) { closeRail(); renderOverview(); window.scrollTo(0, 0); }
+  }
+  el.overviewToggle.addEventListener('click', function () {
+    showOverview(el.overview.hidden);
+  });
+  el.overviewCount.textContent = overviewRows.length;
 
   /* ── select a trajectory ─────────────────────────────── */
 

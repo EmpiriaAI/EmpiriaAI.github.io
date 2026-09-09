@@ -26,6 +26,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 SNAPSHOT_DIR = ROOT / "data" / "feedback-snapshots"
 INDEX_FILE = ROOT / "feedback-snapshot-index.js"
+INLINE_FILE = ROOT / "trajectory-data.js"
 
 spec = importlib.util.spec_from_file_location(
     "import_feedback_snapshots", Path(__file__).with_name("import-feedback-snapshots.py")
@@ -35,9 +36,10 @@ assert spec.loader is not None
 spec.loader.exec_module(importer)
 
 
-def classify(events: list[dict], re_redact: bool) -> tuple[list[dict], Counter, Counter]:
-    """Return (events, kind counts, status transitions)."""
+def classify(events: list[dict], re_redact: bool) -> tuple[list[dict], Counter, Counter, Counter]:
+    """Return (events, kind counts, status counts, status transitions)."""
     kinds: Counter = Counter()
+    statuses: Counter = Counter()
     moves: Counter = Counter()
     seen_system = False
 
@@ -67,11 +69,25 @@ def classify(events: list[dict], re_redact: bool) -> tuple[list[dict], Counter, 
             if before != after:
                 moves[f"{before} -> {after}"] += 1
             event["status"] = after
+            statuses[after] += 1
 
         event["kind"] = kind
         kinds[kind] += 1
 
-    return events, kinds, moves
+    return events, kinds, statuses, moves
+
+
+def load_js_array(path: Path) -> tuple[str, list]:
+    """Return (assignment prefix, parsed array) for a `window.X = [...];` file."""
+    raw = path.read_text(encoding="utf-8")
+    cut = raw.index("=") + 1
+    return raw[:cut], json.loads(raw[cut:].rstrip().rstrip(";\n").rstrip(";"))
+
+
+def dump_js_array(path: Path, prefix: str, value) -> None:
+    encoded = json.dumps(value, ensure_ascii=False, separators=(",", ":"))
+    encoded = encoded.replace("</", "<\\/").replace("\u2028", "\\u2028").replace("\u2029", "\\u2029")
+    path.write_text(prefix + encoded + ";\n", encoding="utf-8")
 
 
 def main() -> None:
@@ -80,29 +96,43 @@ def main() -> None:
     totals: Counter = Counter()
     moves: Counter = Counter()
     kind_by_file: dict[str, dict] = {}
+    status_by_file: dict[str, dict] = {}
 
     for path in sorted(SNAPSHOT_DIR.glob("*.json")):
         payload = json.loads(path.read_text(encoding="utf-8"))
-        events, kinds, file_moves = classify(payload.get("events") or [], re_redact)
+        events, kinds, statuses, file_moves = classify(payload.get("events") or [], re_redact)
         totals.update(kinds)
         moves.update(file_moves)
         kind_by_file[f"data/feedback-snapshots/{path.name}"] = dict(kinds)
+        status_by_file[f"data/feedback-snapshots/{path.name}"] = dict(statuses)
         if write:
             payload["events"] = events
             path.write_text(
                 json.dumps(payload, ensure_ascii=False, separators=(",", ":")), encoding="utf-8"
             )
 
+    # the three inline trajectories carry their events in trajectory-data.js
+    # rather than as lazy snapshots, and were missed by the first pass
+    inline_prefix, inline = load_js_array(INLINE_FILE)
+    for row in inline:
+        events, kinds, statuses, file_moves = classify(row.get("events") or [], re_redact)
+        totals.update(kinds)
+        moves.update(file_moves)
+        if write:
+            row["events"] = events
+            row["kindCounts"] = dict(kinds)
+            row["statusCounts"] = dict(statuses)
     if write:
-        raw = INDEX_FILE.read_text(encoding="utf-8")
-        index = json.loads(raw[raw.index("=") + 1:].rstrip().rstrip(";\n").rstrip(";"))
+        dump_js_array(INLINE_FILE, inline_prefix, inline)
+
+    if write:
+        index_prefix, index = load_js_array(INDEX_FILE)
         for row in index:
             counts = kind_by_file.get(row.get("lazyData"))
             if counts:
                 row["kindCounts"] = counts
-        encoded = json.dumps(index, ensure_ascii=False, separators=(",", ":"))
-        encoded = encoded.replace("</", "<\\/").replace("\u2028", "\\u2028").replace("\u2029", "\\u2029")
-        INDEX_FILE.write_text("window.EMPIRIA_FEEDBACK_SNAPSHOTS=" + encoded + ";\n", encoding="utf-8")
+                row["statusCounts"] = status_by_file.get(row["lazyData"], {})
+        dump_js_array(INDEX_FILE, index_prefix, index)
 
     print("status transitions")
     for move, count in moves.most_common():

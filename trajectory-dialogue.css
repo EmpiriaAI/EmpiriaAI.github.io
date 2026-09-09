@@ -662,3 +662,80 @@ body.rail-open .dlg-minimap { right: calc(var(--rail-w) + 8px); }
   html { scroll-behavior: auto; }
   .dlg-minimap b:hover { transform: none; }
 }
+
+/* ── corpus overview ─────────────────────────────────────── */
+
+/* Finding a bad case is an N→1 funnel and the reader only ever served the 1.
+   This is the N: one row per trajectory, sortable on the columns that
+   actually separate a bad run from a good one. */
+.dlg-overview { max-width: var(--stage-max); margin: 0 auto; padding: 24px 22px 90px; }
+
+.dlg-overview-head {
+  display: flex; align-items: flex-end; justify-content: space-between;
+  gap: 30px; flex-wrap: wrap; margin-bottom: 18px;
+}
+.dlg-overview-head h1 {
+  margin: 0; font-family: var(--f-display); font-weight: 500;
+  font-size: clamp(23px, 3vw, 34px); line-height: 1.15; letter-spacing: -.02em;
+}
+.dlg-overview-filters { display: flex; gap: 7px; align-items: center; flex-wrap: wrap; }
+.dlg-overview-filters select {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 3px;
+  padding: 5px 9px; font-family: var(--f-mono); font-size: 11px; color: var(--ink-2);
+}
+
+/* the wrap is the scroll container in both axes, so the sticky header must
+   anchor to it (top: 0) rather than to the viewport — anchoring to 58px here
+   pushed the header down inside the wrap and let the first row slide over it */
+.dlg-table-wrap {
+  overflow: auto; border: 1px solid var(--line); border-radius: 6px;
+  max-height: calc(100vh - 250px);
+}
+.dlg-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.dlg-table th {
+  position: sticky; top: 0; z-index: 5;
+  background: var(--bg-alt); text-align: left; white-space: nowrap;
+  padding: 9px 12px; border-bottom: 1px solid var(--line-2); cursor: pointer;
+  font-family: var(--f-mono); font-size: 10px; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--ink-4); font-weight: 500;
+}
+.dlg-table th:hover { color: var(--ink-2); }
+.dlg-table th[aria-sort]::after { content: " ↓"; color: var(--accent); }
+.dlg-table th[aria-sort="ascending"]::after { content: " ↑"; }
+.dlg-table th.num, .dlg-table td.num { text-align: right; }
+.dlg-table td {
+  padding: 9px 12px; border-bottom: 1px solid var(--line);
+  white-space: nowrap; color: var(--ink-2);
+}
+.dlg-table tbody tr { cursor: pointer; }
+.dlg-table tbody tr:hover td { background: var(--surface); color: var(--ink); }
+.dlg-table tbody tr:last-child td { border-bottom: 0; }
+.dlg-table .name { color: var(--ink); }
+.dlg-table .name small {
+  display: block; font-family: var(--f-mono); font-size: 10px; color: var(--ink-4);
+}
+.dlg-table .mono { font-family: var(--f-mono); font-size: 11.5px; }
+.dlg-table .rate { font-family: var(--f-mono); font-size: 12px; }
+.dlg-table .rate.hot { color: var(--error); }
+.dlg-fail-chip {
+  font-family: var(--f-mono); font-size: 10px; padding: 1px 5px;
+  border-radius: 2px; margin-left: 4px;
+}
+.dlg-fail-chip.error    { color: var(--error);    background: color-mix(in srgb, var(--error) 15%, transparent); }
+.dlg-fail-chip.timeout  { color: var(--timeout);  background: color-mix(in srgb, var(--timeout) 16%, transparent); }
+.dlg-fail-chip.rejected { color: var(--rejected); background: color-mix(in srgb, var(--rejected) 16%, transparent); }
+.dlg-table .zero { color: var(--ink-5); }
+
+/* a bar behind the failure rate, so the column scans without reading */
+.dlg-rate-cell { position: relative; }
+.dlg-rate-cell i {
+  position: absolute; right: 0; top: 50%; transform: translateY(-50%);
+  height: 60%; background: color-mix(in srgb, var(--error) 16%, transparent);
+  border-radius: 2px; pointer-events: none;
+}
+.dlg-legend {
+  margin: 7px 0 0; font-family: var(--f-mono); font-size: 10.5px; color: var(--ink-4);
+  display: flex; align-items: center; gap: 5px;
+}
+.dlg-legend .dlg-fail-chip { margin-left: 8px; }
+.dlg-table .dlg-fail-chip + .dlg-fail-chip { margin-left: 5px; }
