@@ -45,6 +45,36 @@ clipped slice, the loop diagram parks in a readable resting state rather than
 mid-beat, pointer interaction in the hero is never armed, and hover colour
 feedback is kept while movement is dropped.
 
+## Trajectory pages
+
+```
+trajectory-explorer.html   linear event stream; ?category=feedback|swe opens a tab
+trajectory-dialogue.html   two-lane reader: fed-to-model left, model-produced right
+trajectory-data.js         two feedback runs + django__django-11119 (inline)
+swe-trajectory-data.js     83 swe-task-forge rollouts over 47 tasks (inline)
+feedback-snapshot-index.js 42 feedback snapshots, bodies lazy in data/
+tools/                     importers that produce the data files above
+schema/                    the SWE field contract and its capture-gap ledger
+```
+
+Both pages concatenate `EMPIRIA_RAW_TRAJECTORIES`, `EMPIRIA_SWE_TRAJECTORIES`
+and `EMPIRIA_FEEDBACK_SNAPSHOTS` and route on `trajectoryClass`.
+
+**SWE rollouts** come from `tools/export-swe-trajectories.py`, which reads a
+swe-task-forge pack and the mining manifests behind it. The field contract is
+`schema/SWE_TRAJECTORY.md` (+ `swe-trajectory.schema.json`): every field is
+optional and a `null` hides its row, so a producer can start filling a reserved
+field and it appears with no viewer change. For SWE runs the pipeline panel
+becomes a provenance panel — commit source, task construction, both gate arms
+with their raw pytest tails, suite-flip evidence, gold patch and hidden tests.
+
+Read `schema/SWE_FIELD_COVERAGE.md` before trusting a number: 610 of the 1,039
+commands in this corpus have no output anywhere in the pack (395 have it in full,
+34 only its tail), because the harness keeps the last ~59 KB of the codex
+transcript and its `command_result` events store the command but never the output. Those calls carry
+`status: "missing"` — rendered muted, and kept out of every failure count,
+because a capture gap is not an agent failure.
+
 ## Source
 
 Site source and the rest of the lab's work: <https://github.com/EmpiriaAI>

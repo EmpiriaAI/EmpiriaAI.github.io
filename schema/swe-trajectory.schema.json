@@ -1,0 +1,1388 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://empiriaai.github.io/schema/swe-trajectory.schema.json",
+  "title": "swe-trajectory/1.0",
+  "description": "One SWE agent rollout as consumed by trajectory-explorer.html and trajectory-dialogue.html. Every field is optional; a null renders as an omitted row. Fields marked x-status C are the written interface for data no producer emits yet.",
+  "type": "array",
+  "items": {
+    "$ref": "#/$defs/trajectory"
+  },
+  "$defs": {
+    "trajectory": {
+      "type": "object",
+      "required": [
+        "id",
+        "trajectoryClass",
+        "events"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "shortId": {
+          "type": "string",
+          "description": "unique per run; the two-lane deep link is ?run=<shortId>"
+        },
+        "title": {
+          "type": "string"
+        },
+        "trajectoryClass": {
+          "const": "swe",
+          "description": "omit and the page renders nothing"
+        },
+        "category": {
+          "type": "string"
+        },
+        "taskType": {
+          "type": "string"
+        },
+        "situation": {
+          "enum": [
+            "successful",
+            "failed"
+          ]
+        },
+        "score": {
+          "type": [
+            "string",
+            "number",
+            "null"
+          ],
+          "description": "site form: 'Reward 1.0'"
+        },
+        "valueTier": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "x-status": "C"
+        },
+        "model": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "agent": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "serviceTier": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "x-status": "C"
+        },
+        "dataSource": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "conversationId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "snapshotLabel": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "snapshotOrdinal": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "report": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "messageCount": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "eventCount": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "toolCallCount": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "agentStepCount": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "estimatedTokens": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "errorRate": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "captureCoverage": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "tokenUsageEstimated": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "counts": {
+          "type": "object",
+          "properties": {
+            "user": {
+              "type": "integer"
+            },
+            "thinking": {
+              "type": "integer"
+            },
+            "assistant": {
+              "type": "integer"
+            },
+            "tool_call": {
+              "type": "integer"
+            },
+            "tool_result": {
+              "type": "integer"
+            },
+            "context": {
+              "type": "integer"
+            },
+            "system": {
+              "type": "integer"
+            }
+          }
+        },
+        "toolCounts": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer"
+          }
+        },
+        "tokenUsage": {
+          "$ref": "#/$defs/tokenUsage"
+        },
+        "capture": {
+          "$ref": "#/$defs/capture"
+        },
+        "environment": {
+          "$ref": "#/$defs/environment"
+        },
+        "events": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/event"
+          }
+        },
+        "kindCounts": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "description": "events per kind; lets the reader's corpus overview rank runs without walking events"
+        },
+        "statusCounts": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "description": "tool_result statuses; 'missing' is excluded from the overview's fail-rate denominator"
+        }
+      }
+    },
+    "tokenUsage": {
+      "type": "object",
+      "description": "Both viewers draw a cachedInput/uncachedInput/output composition bar.",
+      "properties": {
+        "total": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "cachedInput": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "x-status": "C"
+        },
+        "uncachedInput": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "x-status": "C"
+        },
+        "cacheWrite": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "x-status": "C"
+        },
+        "output": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "x-status": "C"
+        },
+        "thinkingTokens": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "x-status": "C"
+        },
+        "promptTokens": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "x-status": "C"
+        },
+        "rawInput": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "x-status": "C"
+        },
+        "requestId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "x-status": "C"
+        },
+        "serviceTier": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "x-status": "C"
+        },
+        "source": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "capture": {
+      "type": "object",
+      "description": "Lets a viewer distinguish 'this run had no reasoning' from 'this producer does not record reasoning'.",
+      "properties": {
+        "schemaVersion": {
+          "const": "swe-trajectory/1.0"
+        },
+        "producer": {
+          "type": "string"
+        },
+        "commandsRecorded": {
+          "type": "integer"
+        },
+        "commandsWithOutput": {
+          "type": "integer"
+        },
+        "transcriptChars": {
+          "type": "integer"
+        },
+        "transcriptTruncated": {
+          "type": "boolean"
+        },
+        "available": {
+          "type": "object",
+          "properties": {
+            "perStepTokens": {
+              "type": "boolean"
+            },
+            "fullCommandOutput": {
+              "type": "boolean"
+            },
+            "structuredRollout": {
+              "type": "boolean"
+            },
+            "agentFinalDiff": {
+              "type": "boolean"
+            },
+            "perTestResults": {
+              "type": "boolean"
+            },
+            "relayEnvelope": {
+              "type": "boolean"
+            },
+            "fileMutations": {
+              "type": "boolean"
+            },
+            "samplingParams": {
+              "type": "boolean"
+            },
+            "contextWindowPerStep": {
+              "type": "boolean"
+            },
+            "eventTimestamps": {
+              "type": [
+                "boolean",
+                "string"
+              ]
+            }
+          }
+        }
+      }
+    },
+    "event": {
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "enum": [
+            "user",
+            "system",
+            "context",
+            "thinking",
+            "assistant",
+            "tool_call",
+            "tool_result"
+          ],
+          "description": "left lane: user/system/context/tool_result — right lane: thinking/assistant/tool_call"
+        },
+        "sourceIndex": {
+          "type": "integer"
+        },
+        "title": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "summary": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "content": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "status": {
+          "enum": [
+            "success",
+            "error",
+            "timeout",
+            "rejected",
+            "missing",
+            null
+          ],
+          "description": "error/timeout/rejected count as failures; 'missing' means the command ran but its output was never stored, and must NOT count as a failure"
+        },
+        "timestamp": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "toolCallId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "toolName": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "target": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "truncatedInTrace": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "exitCode": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "x-status": "C"
+        },
+        "durationMs": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "stepMetrics": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "x-status": "C",
+          "description": "highest-value missing field: renders a per-step token strip",
+          "properties": {
+            "prompt": {
+              "type": "integer"
+            },
+            "cached": {
+              "type": "integer"
+            },
+            "output": {
+              "type": "integer"
+            },
+            "reasoning": {
+              "type": "integer"
+            }
+          }
+        },
+        "filesChanged": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          },
+          "x-status": "C"
+        },
+        "contextTokens": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "x-status": "C"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "system",
+            "inject",
+            "user",
+            "interrupt",
+            "notify",
+            "command",
+            "context",
+            "thinking",
+            "assistant",
+            "tool_call",
+            "tool_result"
+          ],
+          "description": "exported explicitly; the reader derives it from content only for old snapshots"
+        },
+        "returnCode": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "description": "0 when the harness reported success; null when unknown"
+        }
+      }
+    },
+    "environment": {
+      "type": "object",
+      "description": "Drives the Environment / Task / Verification panels and the two-lane run-source rail.",
+      "properties": {
+        "benchmark": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "task": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "taskName": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "taskSummary": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "repository": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "baseCommit": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "version": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "difficulty": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "taskCategory": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "issue": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "full instruction text"
+        },
+        "runtime": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "os": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "architecture": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "image": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "workdir": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "cpu": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "memory": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "storage": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "internet": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "agent": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "model": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "serviceTier": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "x-status": "C"
+        },
+        "verifier": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "reward": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "resolved": {
+          "enum": [
+            "true",
+            "false",
+            null
+          ]
+        },
+        "outcome": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "verdict": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "tests": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "'x passed · y failed[ · z skipped]'"
+        },
+        "duration": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "agentDuration": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "verifierDuration": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "environmentSetupDuration": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "x-status": "C"
+        },
+        "agentSetupDuration": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "x-status": "C"
+        },
+        "verifierRc": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "suiteRc": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "gradedBy": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "steps": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "codexRc": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "stoppedBecause": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "exception": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "patchExists": {
+          "enum": [
+            "true",
+            "false",
+            null
+          ],
+          "description": "the AGENT's patch; null when the producer does not capture it"
+        },
+        "patchApplied": {
+          "enum": [
+            "true",
+            "false",
+            null
+          ],
+          "description": "the AGENT's patch applied cleanly; null when unknown"
+        },
+        "failToPass": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "'n / N'; exact only when the whole suite passed"
+        },
+        "passToPass": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "'n / N'; exact only when the whole suite passed"
+        },
+        "gateEmptyRc": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "gateEmptyReward": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "gateOracleRc": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "gateOracleReward": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "gateEmptyTail": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "gateOracleTail": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "goldFiles": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "goldAdd": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "goldDel": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "patchLines": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "hiddenTests": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "solveCommand": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "testEntry": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "dockerfileLines": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "buildCommand": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "baseTarball": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "provInstanceId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "provRoute": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "provShape": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "provTestOrigin": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "provStatementOrigin": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "provWithheld": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "provHarborRef": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "provImageDigest": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "provAuthor": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "provAuthorDate": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "provIssueRefs": {
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "provIssueTracker": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "provParent": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "provIsMerge": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "provRepoUrl": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "provBucket": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "provGoldDigest": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "provTestDigest": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "provGoldFiles": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "provTestFiles": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "provEvidence": {
+          "type": [
+            "object",
+            "null"
+          ]
+        },
+        "provJudge": {
+          "type": [
+            "object",
+            "null"
+          ]
+        },
+        "provStatementMeta": {
+          "type": [
+            "object",
+            "string",
+            "null"
+          ]
+        },
+        "provStatementTitle": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "provStats": {
+          "type": [
+            "object",
+            "null"
+          ]
+        },
+        "provSwebench": {
+          "type": [
+            "object",
+            "null"
+          ]
+        },
+        "language": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "miningWindow": {
+          "type": [
+            "string",
+            "object",
+            "null"
+          ]
+        },
+        "verifiedInstancesTotal": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "commitStats": {
+          "type": [
+            "object",
+            "null"
+          ]
+        },
+        "conversationId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "snapshot": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "sourceFile": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "requestId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "x-status": "C"
+        },
+        "runOrdinal": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "runsForTask": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "commitSubject": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "domain": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "keywords": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "statementTitle": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "agentTimeout": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "verifierTimeout": {
+          "type": [
+            "string",
+            "integer",
+            "null"
+          ],
+          "description": "site form: '2400 s'"
+        },
+        "commandsRecorded": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "callsWithOutput": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "outputCoverage": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "transcriptChars": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "transcriptExecBlocks": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "transcriptTruncated": {
+          "enum": [
+            "true",
+            "false",
+            null
+          ]
+        },
+        "agentPatch": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "x-status": "C",
+          "description": "git diff of the workspace when the run ended — enables agent-vs-gold comparison"
+        },
+        "agentPatchFiles": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          },
+          "x-status": "C"
+        },
+        "agentPatchAdd": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "x-status": "C"
+        },
+        "agentPatchDel": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "x-status": "C"
+        },
+        "testResults": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "x-status": "C",
+          "description": "per-test outcomes instead of only the pytest tail",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "arm": {
+                "enum": [
+                  "empty",
+                  "gold",
+                  "agent"
+                ]
+              },
+              "status": {
+                "enum": [
+                  "passed",
+                  "failed",
+                  "error",
+                  "skipped"
+                ]
+              },
+              "duration": {
+                "type": "number"
+              }
+            }
+          }
+        },
+        "relay": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "x-status": "C",
+          "properties": {
+            "attempts": {
+              "type": "integer"
+            },
+            "lastStatus": {
+              "type": "integer"
+            },
+            "rateLimited": {
+              "type": "boolean"
+            },
+            "retryAfter": {
+              "type": "number"
+            }
+          }
+        },
+        "sampling": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "x-status": "C",
+          "properties": {
+            "temperature": {
+              "type": "number"
+            },
+            "topP": {
+              "type": "number"
+            },
+            "maxTokens": {
+              "type": "integer"
+            },
+            "reasoningEffort": {
+              "type": "string"
+            },
+            "seed": {
+              "type": "integer"
+            }
+          }
+        },
+        "family": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "'SWE task environment'"
+        },
+        "created": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "task creation date (SWE-bench) or commit author date"
+        },
+        "patchTarget": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "regressionTest": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "startedAt": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "finishedAt": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "jobId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "trialId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "gateEmptySummary": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "gateOracleSummary": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    }
+  }
+}
