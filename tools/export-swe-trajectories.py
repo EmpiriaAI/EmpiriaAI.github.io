@@ -249,9 +249,96 @@ def repair_call_pairing(events):
         e["sourceIndex"] = n
     return out
 
+# Every codex command reaches the task container through the same wrapper:
+#   /bin/bash -lc "docker exec -u agent -w /workspace <ctr> bash -lc '<command>'"
+# which buries the command ~75 characters in. Keep the raw invocation in
+# `content`; expose the command itself as `command` for the readers.
+_OUTER = re.compile(r'^/bin/(?:ba)?sh -lc "(.*)"$', re.S)
+_OUTER_SQ = re.compile(r"^/bin/(?:ba)?sh -lc '(.*)'$", re.S)
+_OUTER_CUT = re.compile(r'^/bin/(?:ba)?sh -lc "(.*)$', re.S)      # harness kept only line 1
+_STDIN = re.compile("^" + r"(docker exec(?: -[a-zA-Z]+(?: (?!bash\b)[^\s'\"]+)?)*) (\S+) (bash -s\b.*)$", re.S)
+_DOCKER = r"(docker exec(?: -[a-zA-Z]+(?: (?!bash\b)[^\s'\"]+)?)*) (\S+) bash -lc "
+_INNER_SQ = re.compile("^" + _DOCKER + r"'([^']*)'(.*)$", re.S)
+_INNER_DQ = re.compile("^" + _DOCKER + r'"((?:[^"\\]|\\.)*)"(.*)$', re.S)
+_INNER_OPEN = re.compile("^" + _DOCKER + r"""(['"])(.*)$""", re.S)
+
+HOST_SHELL = "host shell — outside the task container"
+
+def _undq(text):
+    """undo one level of bash double-quote escaping"""
+    return re.sub(r'\\([\\"$`])', r"\1", text)
+
+def unwrap_command(raw):
+    """-> (command, invocation, truncated) or (None, None, False) when not wrapped"""
+    # command_result appends " in <cwd>", and codex adds "\nPoll." to long-running ones
+    raw = re.sub(r"""(["'])\s+in\s+/[^"']*$""", r"\1", (raw or "").strip())
+    cut = False
+    m = _OUTER.match(raw)
+    if m:
+        body = _undq(m.group(1))
+    elif _OUTER_SQ.match(raw):
+        body = _OUTER_SQ.match(raw).group(1).replace("'\"'\"'", "'")
+    else:
+        m, cut = _OUTER_CUT.match(raw), True
+        if not m: return None, None, False
+        body = _undq(m.group(1))
+    st = _STDIN.match(body)
+    if st:
+        return st.group(3).strip(), st.group(1), cut
+    if not body.lstrip().startswith(("docker exec", "bash -lc 'docker exec", 'bash -lc "docker exec')):
+        # codex was told to wrap every command in docker exec; this one it ran as-is,
+        # on the harness host rather than inside the task container
+        return body.strip(), HOST_SHELL, cut
+    sq = _INNER_SQ.match(body.replace("'\"'\"'", "\x00"))      # '"'"' is a literal ' inside '...'
+    if sq:
+        cmd = sq.group(3).replace("\x00", "'")
+        tail = sq.group(4).replace("\x00", "'").strip()
+        inv = sq.group(1)
+    else:
+        dq = _INNER_DQ.match(body)
+        if dq:
+            cmd, tail, inv = _undq(dq.group(3)), dq.group(4).strip(), dq.group(1)
+        else:
+            op = _INNER_OPEN.match(body)
+            if not op: return None, None, False
+            cmd = op.group(4).replace("'\"'\"'", "'")
+            cmd = _undq(cmd) if op.group(3) == '"' else cmd
+            tail, inv, cut = "", op.group(1), True
+    if tail: cmd = cmd + " " + tail
+    return cmd.strip(), inv, cut
+
+def program_of(cmd):
+    s = (cmd or "").strip()
+    while True:
+        m = re.match(r"^(?:set\s+-[A-Za-z]+|cd\s+\S+)\s*(?:;|&&|\n)\s*", s)
+        if not m: break
+        s = s[m.end():]
+    s = re.sub(r"^(?:[A-Z_][A-Z0-9_]*=\S+\s+)+", "", s)
+    tok = re.match(r"[^\s;|&<>()]+", s)
+    return os.path.basename(tok.group(0)) if tok else "shell"
+
+# Post-run artefacts the agent never saw. They stay type "context" for the linear
+# explorer, but carry kind "evaluation" so the two-lane reader keeps them out of
+# the lane labelled "fed to the model".
+_EVALUATION_TITLES = ("Gold patch", "Oracle solve.sh", "Task Dockerfile", "Verifier suite.log")
+
 def align_to_site(trajectories):
     for t in trajectories:
         t["events"] = repair_call_pairing(t["events"])
+        for e in t["events"]:
+            if e["type"] == "tool_call" and "command" not in e:
+                cmd, inv, cut = unwrap_command(e.get("content"))
+                if cmd:
+                    e["command"], e["invocation"] = cmd, inv
+                    if cut: e["commandTruncated"] = True     # the harness stored line 1 only
+                    e["title"] = program_of(cmd)
+                    e["summary"] = re.sub(r"\s+", " ", cmd)[:180]
+            if e["type"] == "context" and (e.get("title") or "").startswith(_EVALUATION_TITLES):
+                e["kind"] = "evaluation"
+        results = [e for e in t["events"] if e["type"] == "tool_result"]
+        observed = [e for e in results if e.get("status") != "missing"]
+        failed = [e for e in observed if e.get("status") in ("error", "timeout", "rejected")]
+        t["errorRate"] = round(len(failed) / len(observed), 4) if observed else None
         c = collections.Counter(e["type"] for e in t["events"])
         t["counts"] = {k: c.get(k, 0) for k in
                        ("user", "thinking", "assistant", "tool_call", "tool_result", "context", "system")}

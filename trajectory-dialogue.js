@@ -44,8 +44,15 @@
   var LABEL = {
     system: 'System prompt', context: 'Injected context', inject: 'Turn injection',
     user: 'Human', interrupt: 'User interrupt', notify: 'Background signal', command: 'Slash command',
-    tool_result: 'Tool result', thinking: 'Reasoning', assistant: 'Assistant', tool_call: 'Tool call'
+    tool_result: 'Tool result', thinking: 'Reasoning', assistant: 'Assistant', tool_call: 'Tool call',
+    evaluation: 'After the run'
   };
+
+  /* SWE rollouts: most of a codex run's commands have no output in the pack
+     (the harness keeps only a transcript tail). Four or more such commands in
+     a row fold down to their first and last, so the turns that do carry
+     output stay on screen. */
+  var GAP_FOLD_MIN = 4;
 
   /* The exported `user` and `system` streams are not what their names say.
      Across the corpus only 69.4% of `user` events are a person typing — the
@@ -59,7 +66,7 @@
     system: 'system', context: 'context', inject: 'inject',
     user: 'user', interrupt: 'signal', notify: 'signal', command: 'signal',
     tool_result: 'tool_result', thinking: 'thinking',
-    assistant: 'assistant', tool_call: 'tool_call'
+    assistant: 'assistant', tool_call: 'tool_call', evaluation: 'evaluation'
   };
 
   function kindOf(event, seenSystem) {
@@ -232,7 +239,17 @@
 
   function buildBody(card, event) {
     var body = make('div', 'dlg-body');
-    if (event.type === 'tool_call') {
+    if (event.type === 'tool_call' && event.command) {
+      body.appendChild(make('p', 'dlg-sub', 'Command'));
+      body.appendChild(make('pre', 'dlg-pre', event.command));
+      if (event.commandTruncated) {
+        body.appendChild(make('p', 'dlg-note', 'Only the first line of this command was recorded.'));
+      }
+      if (event.invocation) {
+        body.appendChild(make('p', 'dlg-sub', 'Ran via'));
+        body.appendChild(make('p', 'dlg-mono', event.invocation));
+      }
+    } else if (event.type === 'tool_call') {
       body.appendChild(make('p', 'dlg-sub', 'Arguments'));
       body.appendChild(make('pre', 'dlg-pre', pretty(event.content)));
     } else if (event.type === 'tool_result') {
@@ -265,23 +282,35 @@
     card._kind = kind;
     card._type = CATEGORY[kind] || kind;
     card._bad = !!(event.status && BAD[event.status]);
-    card._haystack = [event.title, event.content, event.summary].join(' ').toLowerCase();
+    card._haystack = [event.title, event.command, event.content, event.summary].join(' ').toLowerCase();
+    var gap = event.type === 'tool_result' && event.status === 'missing';
+    if (gap) card.classList.add('is-gap');
 
     var head = make('button', 'dlg-head');
     head.type = 'button';
     head.appendChild(make('span', 'dlg-tag', LABEL[kind] || kind));
     if (badge) head.appendChild(make('span', 'dlg-badge', badge));
-    if (kind === 'tool_call' || kind === 'tool_result') {
-      head.appendChild(make('span', 'dlg-name', event.title || ''));
+    /* the program name earns its place only when the command does not
+       already open with it (`cd /tmp; python -` → python) */
+    var nameShown = event.title && !(event.command && event.command.trim().indexOf(event.title) === 0);
+    if ((kind === 'tool_call' || kind === 'tool_result') && !gap && nameShown) {
+      head.appendChild(make('span', 'dlg-name', event.title));
     }
-    var peek = kind === 'tool_call' ? firstLine(event.content, 200)
+    /* codex was told to run everything as the agent user inside the task
+       container; say so when a command did not */
+    if (kind === 'tool_call' && event.invocation) {
+      if (/^host shell/.test(event.invocation)) head.appendChild(make('span', 'dlg-badge warn', 'host'));
+      else if (/-u (?:root|0)\b/.test(event.invocation)) head.appendChild(make('span', 'dlg-badge warn', 'root'));
+    }
+    var peek = gap ? 'output not captured'
+             : kind === 'tool_call' ? firstLine(event.command || event.content, 200)
              : event.summary ? firstLine(event.summary, 200)
              : firstLine(event.content, 200);
     head.appendChild(make('span', 'dlg-peek', peek));
     if (event.status) head.appendChild(make('span', 'dlg-status st-' + event.status, event.status));
 
     /* a short user turn is already fully visible in the header */
-    var collapsible = kind !== 'user' || (event.content || '').length > 400;
+    var collapsible = !gap && (kind !== 'user' || (event.content || '').length > 400);
     if (collapsible) {
       card.classList.add('collapsible');
       head.appendChild(make('i', 'dlg-chev', '▾'));
@@ -290,7 +319,8 @@
       });
     }
     card.appendChild(head);
-    if (!collapsible || OPEN_BY_DEFAULT[kind]) { buildBody(card, event); card.classList.add('open'); }
+    /* a capture gap has nothing to open */
+    if (!gap && (!collapsible || OPEN_BY_DEFAULT[kind])) { buildBody(card, event); card.classList.add('open'); }
     return card;
   }
 
@@ -332,10 +362,52 @@
     return row;
   }
 
+  /* ── capture-gap folds ───────────────────────────────── */
+
+  function isGapBand(band) {
+    if (band._rows.length !== 1) return false;
+    var cards = band._rows[0].cards;
+    return cards.length === 2 && cards.some(function (c) { return c._event.status === 'missing'; }) &&
+      cards.some(function (c) { return c._event.type === 'tool_call'; });
+  }
+
+  function setFold(fold, open) {
+    fold.open = open;
+    fold.bands.forEach(function (band) { band.classList.toggle('gap-folded', !open); });
+    fold.button.setAttribute('aria-expanded', String(open));
+    fold.button.textContent = open
+      ? 'Fold ' + fold.bands.length + ' commands without captured output'
+      : '⋯ ' + fold.bands.length + ' more commands whose output was not captured';
+  }
+
+  function revealCard(card) {
+    var band = card.closest('.dlg-band');
+    if (band && band._fold && !band._fold.open) setFold(band._fold, true);
+  }
+
+  function foldGaps(frag) {
+    var run = [];
+    function close() {
+      if (run.length >= GAP_FOLD_MIN) {
+        var inner = run.slice(1, -1);
+        var fold = { bands: inner, open: false, button: make('button', 'dlg-gapfold') };
+        fold.button.type = 'button';
+        fold.button.addEventListener('click', function () { setFold(fold, !fold.open); });
+        inner.forEach(function (band) { band._fold = fold; });
+        frag.insertBefore(fold.button, inner[0]);
+        state.folds.push(fold);
+        setFold(fold, false);
+      }
+      run = [];
+    }
+    state.bands.forEach(function (band) { if (isGapBand(band)) run.push(band); else close(); });
+    close();
+  }
+
   /* ── render ──────────────────────────────────────────── */
 
   function render(events) {
-    state.bands = []; state.rows = []; state.cards = []; state.selection = [];
+    state.bands = []; state.rows = []; state.cards = []; state.selection = []; state.folds = [];
     el.lanes.textContent = ''; el.minimap.textContent = '';
 
     var counts = {}, callNumbers = {}, nextCall = 0, turn = 0, bad = 0;
@@ -362,14 +434,19 @@
       else if (kind === 'user') mark.className = 'm-user';
       else if (!IN_TYPES[event.type]) mark.className = 'm-out';
       mark.title = LABEL[kind] || kind;
-      mark.addEventListener('click', function () { card.scrollIntoView({ block: 'center' }); });
+      mark.addEventListener('click', function () { revealCard(card); card.scrollIntoView({ block: 'center' }); });
       marks.push(mark);
     }
 
     var injectSeen = {};
+    var evaluations = [];
     var i = 0;
     while (i < events.length) {
       var event = events[i];
+
+      /* gold patch, oracle, environment recipe, verifier log: produced around
+         the run, never shown to the agent, so they sit in neither lane */
+      if (kinds[i] === 'evaluation') { evaluations.push(event); i += 1; continue; }
 
       if (STANDALONE[event.type]) {
         var kind = kinds[i];
@@ -466,6 +543,21 @@
       push(band);
     }
 
+    if (evaluations.length) {
+      var after = newBand('is-evaluation');
+      var afterRule = make('div', 'dlg-chapter-rule', 'After the run · never shown to the agent');
+      afterRule.style.gridRow = '1';
+      after.appendChild(afterRule);
+      after._offset = 1;
+      evaluations.forEach(function (ev) {
+        var evCard = buildCard(ev, null, 'evaluation');
+        addRow(after, { inCard: evCard });
+        markFor(ev, evCard, 'evaluation');
+      });
+      push(after);
+    }
+
+    foldGaps(frag);
     el.lanes.appendChild(frag);
     var mapFrag = document.createDocumentFragment();
     marks.forEach(function (m) { mapFrag.appendChild(m); });
@@ -473,6 +565,7 @@
 
     var inCount = 0, outCount = 0;
     Object.keys(counts).forEach(function (type) {
+      if (type === 'evaluation') return;           /* neither fed to nor produced by the model */
       if (type === 'thinking' || type === 'assistant' || type === 'tool_call') outCount += counts[type];
       else inCount += counts[type];
     });
@@ -492,6 +585,7 @@
 
   function metrics(trajectory) {
     var usage = trajectory.tokenUsage || {};
+    var env = trajectory.environment || {};
     var rows = [
       ['Events', trajectory.eventCount || (trajectory.events || []).length],
       ['Tool calls', trajectory.toolCallCount != null ? trajectory.toolCallCount : '—'],
@@ -499,6 +593,14 @@
       ['Tokens', tokens(usage.total || trajectory.estimatedTokens)],
       ['Value tier', trajectory.valueTier || '—']
     ];
+    /* a SWE run is judged by its verifier, and read against how much of it
+       the harness actually kept */
+    if (trajectory.trajectoryClass === 'swe') {
+      if (env.commandsRecorded != null) {
+        rows[0] = ['Output captured', (env.callsWithOutput || 0) + ' / ' + env.commandsRecorded];
+      }
+      rows[4] = ['Reward', (env.reward || '—') + (env.verdict ? ' · ' + env.verdict : '')];
+    }
     el.runMetrics.textContent = '';
     rows.forEach(function (pair) {
       var wrap = document.createElement('div');
@@ -541,6 +643,25 @@
       ['Outcome', env.outcome || trajectory.situation],
       ['Snapshot', env.snapshot || trajectory.snapshotLabel]
     ]));
+
+    if (trajectory.trajectoryClass === 'swe') {
+      var list = function (value) { return value && value.length ? value.join(', ') : null; };
+      el.sourceBody.appendChild(factGroup('SWE task', [
+        ['Repository', env.repository], ['Task', env.task], ['Base commit', env.baseCommit],
+        ['Verdict', env.verdict], ['Reward', env.reward], ['Tests', env.tests],
+        ['FAIL_TO_PASS', env.failToPass], ['PASS_TO_PASS', env.passToPass],
+        ['Gate · empty patch', env.gateEmptySummary], ['Gate · gold patch', env.gateOracleSummary],
+        ['Output captured', env.outputCoverage], ['Stopped because', env.stoppedBecause]
+      ]));
+      if (env.provShape) {
+        el.sourceBody.appendChild(factGroup('Where the task came from', [
+          ['Commit subject', env.commitSubject], ['Author', env.provAuthor], ['Authored', env.provAuthorDate],
+          ['Issue refs', list(env.provIssueRefs)], ['Shape', env.provShape],
+          ['Statement written by', env.provStatementOrigin], ['Withheld from agent', list(env.provWithheld)],
+          ['Full provenance', 'Linear view → Provenance & gate evidence']
+        ]));
+      }
+    }
 
     if (usage.total) {
       var bar = make('div', 'dlg-tokenbar');
@@ -972,6 +1093,7 @@
     state.rows.forEach(function (row) {
       row.gut.hidden = !row.cards.some(function (card) { return !card.hidden; });
     });
+    el.lanes.classList.toggle('is-filtering', !!needle || failMode);
     var shown = 0;
     state.bands.forEach(function (band) {
       var live = band._rows.some(function (row) { return !row.gut.hidden; });
