@@ -11,7 +11,7 @@
 <link rel="preload" href="fonts/space-grotesk.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="fonts/inter-tight.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="fonts/jetbrains-mono.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="style.css?v=20260909-timeline-controls">
+<link rel="stylesheet" href="style.css?v=20260911-swe-corpus">
 </head>
 <body>
 <div class="world" aria-hidden="true"><div class="world-grid"></div></div>
@@ -100,43 +100,43 @@
 
       <details class="analytics-panel pipeline-panel" id="pipelinePanel" hidden>
         <summary>
-          <span><small id="pipelineSourceLabel">Feedback metadata</small><strong>Pipeline details</strong></span>
+          <span><small id="pipelineSourceLabel">Feedback metadata</small><strong id="pipelinePanelTitle">Pipeline details</strong></span>
           <span class="pipeline-summary-status" id="pipelineSummaryStatus">Clean pass</span>
           <i aria-hidden="true">+</i>
         </summary>
         <div class="pipeline-detail-body">
           <section class="pipeline-detail-section pipeline-cleaning-section">
-            <h3>Cleaning quality</h3>
+            <h3 id="pipeH1">Cleaning quality</h3>
             <dl class="pipeline-facts" id="pipelineCleanFacts"></dl>
           </section>
           <section class="pipeline-detail-section pipeline-classification-section">
-            <h3>Task classification</h3>
+            <h3 id="pipeH2">Task classification</h3>
             <dl class="pipeline-facts" id="pipelineClassificationFacts"></dl>
             <div class="pipeline-reason-list" id="pipelineReasonList"></div>
           </section>
           <section class="pipeline-detail-section">
-            <h3>Value & routing</h3>
+            <h3 id="pipeH3">Value &amp; routing</h3>
             <dl class="pipeline-facts" id="pipelineRoutingFacts"></dl>
           </section>
           <section class="pipeline-detail-section">
-            <h3>Quality analysis</h3>
+            <h3 id="pipeH4">Quality analysis</h3>
             <dl class="pipeline-facts" id="pipelineQualityFacts"></dl>
           </section>
           <section class="pipeline-detail-section">
-            <h3>Difficulty</h3>
+            <h3 id="pipeH5">Difficulty</h3>
             <dl class="pipeline-facts" id="pipelineDifficultyFacts"></dl>
           </section>
           <section class="pipeline-detail-section">
-            <h3>Thinking cleanup</h3>
+            <h3 id="pipeH6">Thinking cleanup</h3>
             <dl class="pipeline-facts" id="pipelineThinkingFacts"></dl>
           </section>
           <section class="pipeline-detail-section pipeline-segment-section">
-            <h3>Quality segments</h3>
+            <h3 id="pipeH7">Quality segments</h3>
             <dl class="pipeline-facts" id="pipelineSegmentFacts"></dl>
             <div class="pipeline-segments" id="pipelineSegments"></div>
           </section>
           <section class="pipeline-detail-section pipeline-dataset-section">
-            <h3>Dataset snapshot</h3>
+            <h3 id="pipeH8">Dataset snapshot</h3>
             <dl class="pipeline-facts" id="pipelineDatasetFacts"></dl>
           </section>
         </div>
@@ -229,8 +229,9 @@
 
 <script src="script.js"></script>
 <script src="trajectory-data.js"></script>
+<script src="swe-trajectory-data.js"></script>
 <script src="feedback-pipeline-data.js"></script>
 <script src="feedback-snapshot-index.js"></script>
-<script src="trajectory-explorer.js?v=20260909-timeline-controls"></script>
+<script src="trajectory-explorer.js?v=20260911-swe-corpus"></script>
 </body>
 </html>

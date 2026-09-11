@@ -3239,3 +3239,11 @@ html.js .reveal.in-view { opacity: 1; transform: none; }
   .loop-return i { left: -4.5px; top: -6px; }
   .closing-title { font-size: clamp(30px, 10.4vw, 48px); }
 }
+
+/* ── SWE capture gaps ────────────────────────────────────────
+   status "missing": the command ran but the harness never stored its
+   output. It is not a failure, so it must not borrow the error styling. */
+.raw-event.status-missing .raw-event-marker { background: transparent; box-shadow: inset 0 0 0 1px currentColor; opacity: .45; }
+.raw-event.status-missing .raw-event-preview,
+.raw-event.status-missing .raw-event-body pre code { opacity: .5; font-style: italic; }
+.raw-event.status-missing .raw-event-meta { opacity: .55; }

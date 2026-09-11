@@ -820,3 +820,6 @@ body.rail-open .dlg-minimap { right: calc(var(--rail-w) + 8px); }
 }
 .dlg-overview-filters button:hover { border-color: var(--line-2); color: var(--ink); }
 .dlg-overview-filters button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent-soft); }
+
+/* ── SWE capture gaps: see style.css ─────────────────────── */
+.dlg-status.st-missing { opacity: .55; border-style: dashed; }

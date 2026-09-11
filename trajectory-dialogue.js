@@ -89,6 +89,7 @@
   };
 
   var trajectories = (window.EMPIRIA_RAW_TRAJECTORIES || [])
+    .concat(window.EMPIRIA_SWE_TRAJECTORIES || [])
     .concat(window.EMPIRIA_FEEDBACK_SNAPSHOTS || []);
 
   var el = {};
@@ -1051,7 +1052,9 @@
 
   function overviewRow(trajectory) {
     var counts = statusCountsOf(trajectory);
-    var total = Object.keys(counts).reduce(function (sum, key) { return sum + counts[key]; }, 0);
+    var total = Object.keys(counts).reduce(function (sum, key) {
+      return key === 'missing' ? sum : sum + counts[key];
+    }, 0);
     var fails = BAD_STATUSES.reduce(function (sum, key) { return sum + (counts[key] || 0); }, 0);
     var usage = trajectory.tokenUsage || {};
     return {

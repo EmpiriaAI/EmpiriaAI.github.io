@@ -1,11 +1,21 @@
 (function () {
   'use strict';
 
-  var trajectories = (window.EMPIRIA_RAW_TRAJECTORIES || []).concat(window.EMPIRIA_FEEDBACK_SNAPSHOTS || []);
+  var trajectories = (window.EMPIRIA_RAW_TRAJECTORIES || [])
+    .concat(window.EMPIRIA_SWE_TRAJECTORIES || [])
+    .concat(window.EMPIRIA_FEEDBACK_SNAPSHOTS || []);
   if (!trajectories.length) return;
 
   var selectedIndex = 0;
-  var activeCategory = 'feedback';
+  var activeCategory = (function () {
+    var order = ['feedback', 'swe', 'terminal'];
+    var wanted = new URLSearchParams(location.search).get('category');
+    if (order.indexOf(wanted) >= 0) return wanted;
+    var present = order.filter(function (category) {
+      return trajectories.some(function (t) { return t.trajectoryClass === category; });
+    });
+    return present[0] || 'feedback';
+  })();
   var highQualityOnly = false;
   var deduplicateSessions = false;
   var timelineMode = 'linear';
@@ -268,7 +278,9 @@
     var snapshotSessions = new Set(snapshotItems.map(function (trajectory) { return trajectory.conversationId; })).size;
     text('deduplicateHint', deduplicateSessions ? snapshotSessions + ' longest snapshots · ' + (snapshotItems.length - snapshotSessions) + ' hidden' : snapshotItems.length + ' snapshots → ' + snapshotSessions + ' longest');
 
-    ['feedback', 'swe', 'terminal'].forEach(function (category) {
+    ['feedback', 'swe', 'terminal'].slice().sort(function (a, b) {
+      return (a === activeCategory ? -1 : 0) - (b === activeCategory ? -1 : 0);
+    }).forEach(function (category) {
       var section = document.createElement('section');
       section.className = 'sidebar-group';
       var heading = document.createElement('button');
@@ -345,7 +357,9 @@
     var status = trajectoryStatus(trajectory);
     text('runBreadcrumb', trajectorySourceLabel(trajectory) + ' / ' + trajectory.shortId);
     text('trajectoryName', trajectory.title);
-    text('runSubtitle', env.issue || env.taskName || trajectory.taskType || 'Agent trajectory');
+    text('runSubtitle', trajectory.trajectoryClass === 'swe' && env.provShape
+      ? [env.repository, env.task, env.provShape].filter(Boolean).join('  ·  ')
+      : (env.issue || env.taskName || trajectory.taskType || 'Agent trajectory'));
     var badge = document.getElementById('trajectoryResult');
     badge.textContent = status.label;
     badge.className = 'run-status ' + (status.successful ? 'success' : 'error');
@@ -413,17 +427,27 @@
     text('taskStatement', env.issue || trajectory.title);
     appendFacts(elements.taskFacts, trajectory.trajectoryClass === 'swe' ? [
       ['Task type', trajectory.taskType], ['Category', env.taskCategory || trajectory.category], ['Model', trajectory.model || env.model],
-      ['Service tier', env.serviceTier || trajectory.serviceTier || 'Not reported'], ['Created', '2019-03-24'],
-      ['Base commit', env.baseCommit], ['Patch target', 'django/template/engine.py'], ['Regression test', 'test_autoescape_off']
+      ['Service tier', env.serviceTier || trajectory.serviceTier || 'Not reported'],
+      ['Created', env.created || env.provAuthorDate], ['Base commit', env.baseCommit],
+      ['Commit subject', env.commitSubject],
+      ['Patch target', env.patchTarget || (env.goldFiles || []).join(', ')],
+      ['Regression test', env.regressionTest || (env.hiddenTests || []).join(', ')],
+      ['Withheld from agent', (env.provWithheld || []).join(', ')]
     ] : [
       ['Category', trajectory.category], ['Task type', trajectory.taskType], ['Value tier', trajectory.valueTier],
       ['Model', trajectory.model], ['Data source', trajectory.dataSource], ['Messages', number(trajectory.messageCount)]
     ]);
 
     appendFacts(elements.verificationList, trajectory.trajectoryClass === 'swe' ? [
-      ['Reward', env.reward, 'success-text'], ['Resolved', env.resolved, 'success-text'], ['Patch exists', 'true', 'success-text'],
-      ['Patch applied', env.patchApplied, 'success-text'], ['FAIL_TO_PASS', env.failToPass, 'success-text'],
-      ['PASS_TO_PASS', env.passToPass, 'success-text'], ['Tests', env.tests, 'success-text'], ['Exception', 'None', 'success-text']
+      ['Reward', env.reward, env.resolved === 'true' ? 'success-text' : 'error-text'],
+      ['Resolved', env.resolved, env.resolved === 'true' ? 'success-text' : 'error-text'],
+      ['Verdict', env.verdict],
+      ['Patch exists', env.patchExists, 'success-text'], ['Patch applied', env.patchApplied, 'success-text'],
+      ['FAIL_TO_PASS', env.failToPass, 'success-text'], ['PASS_TO_PASS', env.passToPass, 'success-text'],
+      ['Tests', env.tests, env.resolved === 'true' ? 'success-text' : null],
+      ['Verifier rc', env.verifierRc == null ? null : String(env.verifierRc)], ['Graded by', env.gradedBy],
+      ['Exception', env.exception || (env.resolved === 'true' ? 'None' : env.stoppedBecause),
+        env.resolved === 'true' ? 'success-text' : 'error-text']
     ] : [
       ['Outcome', titleCase(trajectory.situation), trajectoryStatus(trajectory).successful ? 'success-text' : 'error-text'],
       ['Value tier', trajectory.valueTier], ['Error rate', trajectory.errorRate == null ? '—' : (trajectory.errorRate * 100).toFixed(1) + '%'],
@@ -446,7 +470,108 @@
     });
   }
 
+  var FEEDBACK_HEADINGS = ['Cleaning quality', 'Task classification', 'Value & routing',
+    'Quality analysis', 'Difficulty', 'Thinking cleanup', 'Quality segments', 'Dataset snapshot'];
+  var SWE_HEADINGS = ['Commit provenance', 'Task construction', 'Two-arm gate',
+    'Suite-flip evidence', 'Gold patch & hidden tests', 'Run outcome',
+    'Gate arms (raw pytest tails)', 'Pack & budgets'];
+
+  function setPipelineHeadings(headings, panelTitle) {
+    headings.forEach(function (label, index) { text('pipeH' + (index + 1), label); });
+    text('pipelinePanelTitle', panelTitle);
+  }
+
+  function list(value) { return value && value.length ? (Array.isArray(value) ? value.join(', ') : value) : null; }
+
+  function renderSweProvenance(trajectory) {
+    var env = trajectory.environment || {};
+    var ev = env.provEvidence || {};
+    var judge = env.provJudge || {};
+    var behavior = judge.behavior_summary || {};
+    elements.pipelinePanel.hidden = false;
+    setPipelineHeadings(SWE_HEADINGS, 'Provenance & gate evidence');
+    text('pipelineSourceLabel', 'Mining pipeline · ' + (env.provRoute || 'swebench'));
+    text('pipelineSummaryStatus',
+      (env.gateOracleRc === 0 && env.gateEmptyRc !== 0 ? 'Gate passed' : 'Gate incomplete')
+      + ' · ' + (env.provShape || '—'));
+
+    appendFacts(elements.pipelineCleanFacts, [
+      ['Repository', env.repository], ['Repo URL', env.provRepoUrl], ['Bucket', env.provBucket],
+      ['Commit', env.baseCommit], ['Parent', env.provParent], ['Subject', env.commitSubject],
+      ['Author', env.provAuthor], ['Authored', env.provAuthorDate],
+      ['Merge commit', env.provIsMerge == null ? null : yesNo(env.provIsMerge)],
+      ['Issue refs', list(env.provIssueRefs) || 'None'], ['Issue tracker', env.provIssueTracker]
+    ]);
+    appendFacts(elements.pipelineClassificationFacts, [
+      ['Instance ID', env.provInstanceId], ['Shape', env.provShape], ['Route', env.provRoute],
+      ['Statement origin', env.provStatementOrigin], ['Test origin', env.provTestOrigin],
+      ['Withheld from agent', list(env.provWithheld)], ['Harbor ref', env.provHarborRef],
+      ['Image digest', env.provImageDigest], ['Gold patch digest', env.provGoldDigest],
+      ['Test patch digest', env.provTestDigest], ['Base tarball', env.baseTarball]
+    ]);
+    appendReasons(elements.pipelineReasonList, [
+      ['User scenario', behavior.user_scenario], ['Wrong behavior', behavior.wrong_behavior],
+      ['Expected behavior', behavior.expected_behavior],
+      ['Judge verdict', judge.verdict || judge.decision], ['Judge reason', judge.reason || judge.rationale]
+    ]);
+    appendFacts(elements.pipelineRoutingFacts, [
+      ['Empty-patch rc', env.gateEmptyRc == null ? null : String(env.gateEmptyRc)],
+      ['Empty-patch reward', env.gateEmptyReward == null ? null : String(env.gateEmptyReward)],
+      ['Gold-patch rc', env.gateOracleRc == null ? null : String(env.gateOracleRc)],
+      ['Gold-patch reward', env.gateOracleReward == null ? null : String(env.gateOracleReward)],
+      ['Empty arm summary', env.gateEmptySummary], ['Gold arm summary', env.gateOracleSummary]
+    ]);
+    appendFacts(elements.pipelineQualityFacts, [
+      ['base_rc', ev.base_rc], ['broken_rc', ev.broken_rc], ['fixed_rc', ev.fixed_rc],
+      ['gold_patch_rc', ev.gold_patch_rc], ['test_patch_rc', ev.test_patch_rc], ['tree_rc', ev.tree_rc],
+      ['Evidence source', ev.source]
+    ]);
+    appendFacts(elements.pipelineDifficultyFacts, [
+      ['Gold files', list(env.goldFiles)], ['Lines added', number(env.goldAdd)], ['Lines removed', number(env.goldDel)],
+      ['Patch lines (task.toml)', number(env.patchLines)], ['Hidden tests', list(env.hiddenTests)],
+      ['Mined gold files', list(env.provGoldFiles)], ['Mined test files', list(env.provTestFiles)],
+      ['Difficulty label', env.difficulty], ['Domain', env.domain]
+    ]);
+    appendFacts(elements.pipelineThinkingFacts, [
+      ['Verdict', env.verdict], ['Agent steps', number(env.steps)], ['Stopped because', env.stoppedBecause],
+      ['Verifier rc', env.verifierRc == null ? null : String(env.verifierRc)],
+      ['Suite rc', env.suiteRc == null ? null : String(env.suiteRc)],
+      ['Graded by', env.gradedBy], ['codex exit rc', env.codexRc == null ? null : String(env.codexRc)],
+      ['Agent wall clock', env.agentDuration == null ? null : duration(env.agentDuration)],
+      ['Verifier wall clock', env.verifierDuration == null ? null : duration(env.verifierDuration)],
+      ['Commands with output', env.outputCoverage]
+    ]);
+    appendFacts(elements.pipelineSegmentFacts, [
+      ['Empty arm', 'rc ' + env.gateEmptyRc + ' · reward ' + env.gateEmptyReward],
+      ['Gold arm', 'rc ' + env.gateOracleRc + ' · reward ' + env.gateOracleReward]
+    ]);
+    elements.pipelineSegments.textContent = '';
+    [['Empty patch (no fix applied)', env.gateEmptyTail], ['Gold patch applied', env.gateOracleTail]]
+      .forEach(function (pair) {
+        if (!pair[1]) return;
+        var item = document.createElement('article');
+        var head = document.createElement('header');
+        var title = document.createElement('strong'); title.textContent = pair[0];
+        head.appendChild(title);
+        var pre = document.createElement('pre'); var code = document.createElement('code');
+        code.textContent = pair[1]; pre.appendChild(code);
+        item.appendChild(head); item.appendChild(pre);
+        elements.pipelineSegments.appendChild(item);
+      });
+    appendFacts(elements.pipelineDatasetFacts, [
+      ['Benchmark', env.benchmark], ['Variant', env.version], ['Keywords', list(env.keywords)],
+      ['Agent timeout', env.agentTimeout == null ? null : duration(env.agentTimeout)],
+      ['Verifier timeout', env.verifierTimeout == null ? null : duration(env.verifierTimeout)],
+      ['Resources', [env.cpu, env.memory, env.storage].filter(Boolean).join(' · ')],
+      ['Internet', env.internet], ['Verifier command', env.verifier],
+      ['Language', env.language], ['Source file', env.sourceFile]
+    ]);
+  }
+
   function renderPipelineDetails(trajectory) {
+    if (trajectory.trajectoryClass === 'swe' && (trajectory.environment || {}).provShape) {
+      renderSweProvenance(trajectory); return;
+    }
     var source = window.EMPIRIA_FEEDBACK_PIPELINE || {};
     var detail = trajectory.pipelineDetail || source.trajectories && source.trajectories[trajectory.id];
     if (trajectory.trajectoryClass !== 'feedback' || !detail) {
@@ -465,6 +590,7 @@
     var dataset = detail.dataset || source.dataset || {};
 
     elements.pipelinePanel.hidden = false;
+    setPipelineHeadings(FEEDBACK_HEADINGS, 'Pipeline details');
     text('pipelineSourceLabel', 'Feedback metadata');
     text('pipelineSummaryStatus', (clean.passed ? 'Clean pass' : 'Rejected') + ' · ' + titleCase(classification.situation));
 
@@ -760,6 +886,11 @@
     }
   });
   window.addEventListener('resize', function () { setSidebarVisible(sidebarVisible); }, { passive: true });
+
+  if (trajectories[selectedIndex] && trajectories[selectedIndex].trajectoryClass !== activeCategory) {
+    var firstOfCategory = applySnapshotDedup(categoryItems(activeCategory))[0];
+    if (firstOfCategory) selectedIndex = trajectories.indexOf(firstOfCategory);
+  }
 
   renderAll();
 })();
