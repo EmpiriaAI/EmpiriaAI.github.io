@@ -3,6 +3,7 @@
 
   var trajectories = (window.EMPIRIA_RAW_TRAJECTORIES || [])
     .concat(window.EMPIRIA_SWE_TRAJECTORIES || [])
+    .concat(window.EMPIRIA_TB_TRAJECTORIES || [])
     .concat(window.EMPIRIA_FEEDBACK_SNAPSHOTS || []);
   if (!trajectories.length) return;
 
@@ -124,6 +125,10 @@
     return map;
   }
 
+  function isEnvTask(trajectory) {
+    return trajectory.trajectoryClass === 'swe' || trajectory.trajectoryClass === 'terminal';
+  }
+
   function trajectoryStatus(trajectory) {
     var environment = trajectory.environment || {};
     var successful = trajectory.situation === 'successful' || environment.resolved === 'true' || environment.reward === '1.0';
@@ -133,6 +138,7 @@
   function trajectorySourceLabel(trajectory) {
     if (trajectory.trajectoryClass === 'feedback') return 'Feedback';
     if (trajectory.trajectoryClass === 'swe') return 'SWE';
+    if (trajectory.trajectoryClass === 'terminal') return 'Terminal-Bench';
     return titleCase(trajectory.trajectoryClass);
   }
 
@@ -251,7 +257,9 @@
       elements.empty.hidden = true;
       text('visibleCount', '0'); text('eventCount', 'of ' + number(trajectory.eventCount) + ' events'); text('timelineStatus', 'Loading');
       loadTrajectoryEvents(trajectory).then(function () {
-        if (selectedTrajectory() === trajectory) renderTimeline();
+        if (selectedTrajectory() !== trajectory) return;
+        renderPipelineDetails(trajectory);      /* some panels read the loaded body */
+        renderTimeline();
       }).catch(function (error) {
         if (selectedTrajectory() !== trajectory) return;
         elements.timeline.innerHTML = '<p class="trajectory-load-error">' + error.message + '</p>';
@@ -359,6 +367,8 @@
     text('trajectoryName', trajectory.title);
     text('runSubtitle', trajectory.trajectoryClass === 'swe' && env.provShape
       ? [env.repository, env.task, env.provShape].filter(Boolean).join('  ·  ')
+      : trajectory.trajectoryClass === 'terminal'
+      ? [env.repository, env.patchTarget, env.calGrade && 'graded ' + env.calGrade].filter(Boolean).join('  ·  ')
       : (env.issue || env.taskName || trajectory.taskType || 'Agent trajectory'));
     var badge = document.getElementById('trajectoryResult');
     badge.textContent = status.label;
@@ -373,24 +383,24 @@
     var tokens = trajectory.tokenUsage || {};
     var counts = trajectory.counts || {};
     var agentSteps = trajectory.agentStepCount;
-    if (agentSteps == null && trajectory.trajectoryClass === 'swe') {
+    if (agentSteps == null && isEnvTask(trajectory)) {
       agentSteps = Math.max(0, (trajectory.messageCount || 0) - (counts.system || 0) - (counts.user || 0));
     }
-    text('metricPrimaryLabel', trajectory.trajectoryClass === 'swe' ? 'Reward' : 'Value tier');
-    text('metricOutcomeLabel', trajectory.trajectoryClass === 'swe' ? 'Verification' : 'Outcome');
-    text('metricReward', trajectory.trajectoryClass === 'swe' ? env.reward : trajectory.valueTier);
+    text('metricPrimaryLabel', isEnvTask(trajectory) ? 'Reward' : 'Value tier');
+    text('metricOutcomeLabel', isEnvTask(trajectory) ? 'Verification' : 'Outcome');
+    text('metricReward', isEnvTask(trajectory) ? env.reward : trajectory.valueTier);
     text('metricDuration', env.duration != null ? duration(env.duration) : '—');
     text('metricSteps', trajectory.agentStepCount != null ? trajectory.agentStepCount : counts.thinking);
     text('metricTools', number(trajectory.toolCallCount));
     text('metricTokens', number(tokens.total));
-    text('metricVerification', trajectory.trajectoryClass === 'swe' ? env.tests : titleCase(trajectory.situation));
+    text('metricVerification', isEnvTask(trajectory) ? (env.tests || env.verdict) : titleCase(trajectory.situation));
   }
 
   function renderEnvironment(trajectory) {
     var env = trajectory.environment || {};
     text('environmentFamily', env.family || titleCase(trajectory.trajectoryClass));
     var facts;
-    if (trajectory.trajectoryClass === 'swe') {
+    if (isEnvTask(trajectory)) {
       facts = [
         ['Benchmark', env.benchmark], ['Task', env.task], ['Repository', env.repository], ['Base commit', env.baseCommit],
         ['Version', env.version], ['Difficulty', env.difficulty], ['Runtime', env.runtime], ['OS / architecture', [env.os, env.architecture].filter(Boolean).join(' · ')], ['Image', env.image],
@@ -407,7 +417,7 @@
     }
     appendFacts(elements.environmentGrid, facts);
 
-    if (trajectory.trajectoryClass === 'swe') {
+    if (isEnvTask(trajectory)) {
       elements.lifecycle.hidden = false;
       var stages = [
         ['Environment setup', env.environmentSetupDuration], ['Agent setup', env.agentSetupDuration], ['Execution', env.agentDuration], ['Verification', env.verifierDuration]
@@ -425,7 +435,7 @@
   function renderTaskAndVerification(trajectory) {
     var env = trajectory.environment || {};
     text('taskStatement', env.issue || trajectory.title);
-    appendFacts(elements.taskFacts, trajectory.trajectoryClass === 'swe' ? [
+    appendFacts(elements.taskFacts, isEnvTask(trajectory) ? [
       ['Task type', trajectory.taskType], ['Category', env.taskCategory || trajectory.category], ['Model', trajectory.model || env.model],
       ['Service tier', env.serviceTier || trajectory.serviceTier || 'Not reported'],
       ['Created', env.created || env.provAuthorDate], ['Base commit', env.baseCommit],
@@ -438,7 +448,7 @@
       ['Model', trajectory.model], ['Data source', trajectory.dataSource], ['Messages', number(trajectory.messageCount)]
     ]);
 
-    appendFacts(elements.verificationList, trajectory.trajectoryClass === 'swe' ? [
+    appendFacts(elements.verificationList, isEnvTask(trajectory) ? [
       ['Reward', env.reward, env.resolved === 'true' ? 'success-text' : 'error-text'],
       ['Resolved', env.resolved, env.resolved === 'true' ? 'success-text' : 'error-text'],
       ['Verdict', env.verdict],
@@ -568,9 +578,81 @@
     ]);
   }
 
+  var TB_HEADINGS = ['Task source', 'Calibration', 'Two-arm gate', 'This attempt',
+    'Hidden tests', 'Every attempt on this task', 'Hidden suite (raw)', 'Environment'];
+
+  /* Terminal-Bench tasks here come from a calibration run: each task was
+     attempted by a strong and a weak model, and the grade says whether the
+     pair separates. The panel shows where this attempt sits in that picture. */
+  function renderTbCalibration(trajectory) {
+    var env = trajectory.environment || {};
+    elements.pipelinePanel.hidden = false;
+    setPipelineHeadings(TB_HEADINGS, 'Calibration & gate evidence');
+    text('pipelineSourceLabel', 'Calibration · ' + (env.benchmark || 'Harbor'));
+    text('pipelineSummaryStatus', 'Graded ' + (env.calGrade || '—') +
+      (env.calJudgeSuspect ? ' · judge suspect' : ''));
+    appendFacts(elements.pipelineCleanFacts, [
+      ['Repository', env.repository], ['Carved file', env.patchTarget],
+      ['Lines removed', env.carvedLines == null ? null : number(env.carvedLines)],
+      ['Language', env.language], ['Task variant', env.version], ['Task', env.taskName]
+    ]);
+    appendFacts(elements.pipelineClassificationFacts, [
+      ['Grade', env.calGrade], ['Strong model', env.calStrong], ['Weak model', env.calWeak],
+      ['Judge suspect', env.calJudgeSuspect == null ? null : yesNo(env.calJudgeSuspect)]
+    ]);
+    appendReasons(elements.pipelineReasonList, [['Why this grade', env.calWhy]]);
+    appendFacts(elements.pipelineRoutingFacts, [
+      ['Empty-patch rc', env.gateEmptyRc == null ? null : String(env.gateEmptyRc)],
+      ['Empty-patch reward', env.gateEmptyReward == null ? null : String(env.gateEmptyReward)],
+      ['Oracle rc', env.gateOracleRc == null ? null : String(env.gateOracleRc)],
+      ['Oracle reward', env.gateOracleReward == null ? null : String(env.gateOracleReward)]
+    ]);
+    appendFacts(elements.pipelineQualityFacts, [
+      ['Model', trajectory.model], ['Trial', env.calTrial], ['Verdict', env.verdict],
+      ['Said DONE', env.calSaidDone == null ? null : yesNo(env.calSaidDone)],
+      ['Agent rc', env.calAgentRc == null ? null : String(env.calAgentRc)],
+      ['Verifier rc', env.verifierRc == null ? null : String(env.verifierRc)],
+      ['Hidden suite', env.tests], ['Exception', env.exception],
+      ['Wall clock', env.duration == null ? null : duration(env.duration)],
+      ['Ran as', env.agentUser]
+    ]);
+    appendFacts(elements.pipelineDifficultyFacts, [
+      ['Hidden test files', list(env.hiddenTests)], ['Graded by', env.gradedBy]
+    ]);
+    appendFacts(elements.pipelineThinkingFacts, (env.calAttempts || []).map(function (entry) {
+      var cut = entry.indexOf(' ');
+      return [entry.slice(0, cut), entry.slice(cut + 1)];
+    }));
+    appendFacts(elements.pipelineSegmentFacts, [
+      ['Session matched by', env.calMatchScore == null ? null : String(env.calMatchScore)]
+    ]);
+    elements.pipelineSegments.textContent = '';
+    var log = (trajectory.events || []).filter(function (event) {
+      return event.kind === 'evaluation' && /^Verifier/.test(event.title || '');
+    })[0];
+    if (log) {
+      var item = document.createElement('article');
+      var head = document.createElement('header');
+      var strong = document.createElement('strong'); strong.textContent = 'Hidden suite output';
+      head.appendChild(strong);
+      var pre = document.createElement('pre'); var code = document.createElement('code');
+      code.textContent = log.content.slice(-4000); pre.appendChild(code);
+      item.appendChild(head); item.appendChild(pre);
+      elements.pipelineSegments.appendChild(item);
+    }
+    appendFacts(elements.pipelineDatasetFacts, [
+      ['Image', env.image], ['Resources', [env.cpu, env.memory, env.storage].filter(Boolean).join(' · ')],
+      ['Internet', env.internet], ['Workspace', env.workdir], ['Data source', trajectory.dataSource],
+      ['Source record', env.sourceFile]
+    ]);
+  }
+
   function renderPipelineDetails(trajectory) {
     if (trajectory.trajectoryClass === 'swe' && (trajectory.environment || {}).provShape) {
       renderSweProvenance(trajectory); return;
+    }
+    if (trajectory.trajectoryClass === 'terminal' && (trajectory.environment || {}).calGrade) {
+      renderTbCalibration(trajectory); return;
     }
     var source = window.EMPIRIA_FEEDBACK_PIPELINE || {};
     var detail = trajectory.pipelineDetail || source.trajectories && source.trajectories[trajectory.id];
@@ -836,6 +918,9 @@
     elements.runView.hidden = false;
     elements.categoryEmpty.hidden = true;
     var trajectory = selectedTrajectory();
+    /* a run whose body is not loaded yet (every Terminal-Bench run, the feedback
+       snapshots) goes through the loader, which draws the chrome and fetches */
+    if (!Array.isArray(trajectory.events) && trajectory.lazyData) { setSelectedById(trajectory.id); return; }
     renderHeader(trajectory); renderMetrics(trajectory); renderPipelineDetails(trajectory); renderEnvironment(trajectory);
     renderTaskAndVerification(trajectory); renderTokens(trajectory); updateFilterCounts(trajectory); elements.search.value = ''; renderTimeline();
   }

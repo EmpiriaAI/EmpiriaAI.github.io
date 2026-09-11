@@ -97,6 +97,7 @@
 
   var trajectories = (window.EMPIRIA_RAW_TRAJECTORIES || [])
     .concat(window.EMPIRIA_SWE_TRAJECTORIES || [])
+    .concat(window.EMPIRIA_TB_TRAJECTORIES || [])
     .concat(window.EMPIRIA_FEEDBACK_SNAPSHOTS || []);
 
   var el = {};
@@ -299,7 +300,7 @@
     /* codex was told to run everything as the agent user inside the task
        container; say so when a command did not */
     if (kind === 'tool_call' && event.invocation) {
-      if (/^host shell/.test(event.invocation)) head.appendChild(make('span', 'dlg-badge warn', 'host'));
+      if (/^host shell|outside the task container/.test(event.invocation)) head.appendChild(make('span', 'dlg-badge warn', 'host'));
       else if (/-u (?:root|0)\b/.test(event.invocation)) head.appendChild(make('span', 'dlg-badge warn', 'root'));
     }
     var peek = gap ? 'output not captured'
@@ -595,9 +596,11 @@
     ];
     /* a SWE run is judged by its verifier, and read against how much of it
        the harness actually kept */
-    if (trajectory.trajectoryClass === 'swe') {
+    if (trajectory.trajectoryClass === 'swe' || trajectory.trajectoryClass === 'terminal') {
       if (env.commandsRecorded != null) {
         rows[0] = ['Output captured', (env.callsWithOutput || 0) + ' / ' + env.commandsRecorded];
+      } else if (env.calGrade) {
+        rows[0] = ['Task grade', env.calGrade];
       }
       rows[4] = ['Reward', (env.reward || '—') + (env.verdict ? ' · ' + env.verdict : '')];
     }
@@ -643,6 +646,23 @@
       ['Outcome', env.outcome || trajectory.situation],
       ['Snapshot', env.snapshot || trajectory.snapshotLabel]
     ]));
+
+    if (trajectory.trajectoryClass === 'terminal' && env.calGrade) {
+      el.sourceBody.appendChild(factGroup('Terminal-Bench task', [
+        ['Repository', env.repository], ['Carved file', env.patchTarget], ['Language', env.language],
+        ['Verdict', env.verdict], ['Reward', env.reward], ['Hidden suite', env.tests],
+        ['Exception', env.exception], ['Trial', env.calTrial],
+        ['Said DONE', env.calSaidDone == null ? null : (env.calSaidDone ? 'yes' : 'no')],
+        ['Ran as', env.agentUser]
+      ]));
+      el.sourceBody.appendChild(factGroup('Calibration', [
+        ['Grade', env.calGrade], ['Strong model', env.calStrong], ['Weak model', env.calWeak],
+        ['Why', env.calWhy, true]
+      ].concat((env.calAttempts || []).map(function (entry) {
+        var cut = entry.indexOf(' ');
+        return [entry.slice(0, cut), entry.slice(cut + 1)];
+      }))));
+    }
 
     if (trajectory.trajectoryClass === 'swe') {
       var list = function (value) { return value && value.length ? value.join(', ') : null; };
