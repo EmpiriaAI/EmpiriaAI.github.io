@@ -11,7 +11,7 @@
 <link rel="preload" href="fonts/space-grotesk.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="fonts/inter-tight.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="fonts/jetbrains-mono.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="trajectory-dialogue.css?v=20260911-swe-corpus">
+<link rel="stylesheet" href="trajectory-dialogue.css?v=20260911-swe-two-lane">
 </head>
 <body>
 
@@ -78,6 +78,8 @@
     <button type="button" data-type="thinking"    aria-pressed="true">Reasoning <b>0</b></button>
     <button type="button" data-type="assistant"   aria-pressed="true">Assistant <b>0</b></button>
     <button type="button" data-type="tool_call"   aria-pressed="true">Tool calls <b>0</b></button>
+    <span class="dlg-filter-split" aria-hidden="true"></span>
+    <button type="button" data-type="evaluation"  aria-pressed="true">After the run <b>0</b></button>
   </div>
   <div class="dlg-actions">
     <button type="button" id="failOnly" aria-pressed="false" class="danger">Failures only <b id="failCount">0</b></button>
@@ -209,8 +211,8 @@
 </aside>
 
 <script src="trajectory-data.js"></script>
-<script src="swe-trajectory-data.js"></script>
+<script src="swe-trajectory-data.js?v=20260911-swe-two-lane"></script>
 <script src="feedback-snapshot-index.js"></script>
-<script src="trajectory-dialogue.js?v=20260911-swe-corpus"></script>
+<script src="trajectory-dialogue.js?v=20260911-swe-two-lane"></script>
 </body>
 </html>
