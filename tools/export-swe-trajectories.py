@@ -209,8 +209,53 @@ def _scrub(value):
     if isinstance(value, dict): return {k: _scrub(v) for k, v in value.items()}
     return value
 
+def _is_transcript_call(e):
+    # transcript-derived calls carry truncatedInTrace (bool); backbone-only calls do not
+    return e["type"] == "tool_call" and isinstance(e.get("truncatedInTrace"), bool)
+
+def repair_call_pairing(events):
+    """Exports made before the merge-order fix hung a transcript call's result on the
+    last command the transcript skipped, and gave the command whose output the
+    transcript opens with both a 'missing' placeholder and its partial output.
+    Put every result back under its own call. A no-op on exports made since."""
+    out = []
+    for i, e in enumerate(events):
+        nxt = events[i + 1] if i + 1 < len(events) else None
+        if (e["type"] == "tool_result" and e.get("status") == "missing" and nxt is not None
+                and nxt["type"] == "tool_result" and nxt.get("toolCallId") == e.get("toolCallId")
+                and (nxt.get("summary") or "").startswith("partial output")):
+            continue                                  # partial output supersedes the placeholder
+        out.append(e)
+    events, out, i = out, [], 0
+    while i < len(events):
+        e = events[i]
+        out.append(e)
+        if not _is_transcript_call(e):
+            i += 1; continue
+        j = i + 1
+        while j < len(events) and not _is_transcript_call(events[j]):
+            j += 1
+        block = events[i + 1:j]
+        own = next((k for k, x in enumerate(block) if x["type"] == "tool_result"
+                    and x.get("status") != "missing"
+                    and not (x.get("summary") or "").startswith("partial output")), None)
+        if own is not None:
+            r = block.pop(own)
+            r["toolCallId"] = e.get("toolCallId")
+            out.append(r)
+        out.extend(block)
+        i = j
+    for n, e in enumerate(out):
+        e["sourceIndex"] = n
+    return out
+
 def align_to_site(trajectories):
     for t in trajectories:
+        t["events"] = repair_call_pairing(t["events"])
+        c = collections.Counter(e["type"] for e in t["events"])
+        t["counts"] = {k: c.get(k, 0) for k in
+                       ("user", "thinking", "assistant", "tool_call", "tool_result", "context", "system")}
+        t["messageCount"] = t["eventCount"] = len(t["events"])
         env = t["environment"]
         t["category"], t["taskType"], t["valueTier"] = "SWE", "commit_restoration", "SWE"
         t["dataSource"] = "swe-task-forge"
@@ -371,14 +416,25 @@ for tdir in sorted(glob.glob(PACK + "/tasks/*")):
             if e["type"] == "tool_call":
                 target = norm(e.get("content"))
                 hit = next((k for k in range(p, len(backbone)) if same(backbone[k]["cmd"], target)), None)
+                # pending = [result of the previous call?, reasoning leading to this one].
+                # The previous call's result belongs directly under that call; commands the
+                # transcript skipped ran after it; the reasoning stays next to the call it
+                # leads to. Flushing all of pending after the skipped commands hung the
+                # previous result on the last skipped command instead.
+                prev_result = pending[:1] if pending and pending[0][2]["type"] == "tool_result" else []
+                rest = pending[len(prev_result):]
+                pending = []
+                merged.extend(prev_result)
                 if hit is None:
-                    merged.extend(pending); pending = []
+                    merged.extend(rest)
                     merged.append(("call", None, e)); continue
                 for k in range(p, hit):
-                    merged.append(("call_only", backbone[k], None))
                     if head_partial is not None and k == hit - 1:
-                        merged.append(("head", None, head_partial)); head_partial = None
-                merged.extend(pending); pending = []
+                        # the transcript opens inside this command's output
+                        merged.append(("call_head", backbone[k], head_partial)); head_partial = None
+                    else:
+                        merged.append(("call_only", backbone[k], None))
+                merged.extend(rest)
                 merged.append(("call", backbone[hit], e))
                 p = hit + 1; matched += 1
             elif e["type"] == "tool_result" and e.get("exitLabel") == "partial":
@@ -395,6 +451,22 @@ for tdir in sorted(glob.glob(PACK + "/tasks/*")):
                                "content": instruction, "summary": title, "timestamp": t0})
             counts["user"] += 1; idx += 1
         for tag, bb, e in merged:
+            if tag == "call_head":
+                call_no += 1
+                content = redact(bb["raw"] or "")
+                out_events.append({"type": "tool_call", "sourceIndex": idx, "content": content,
+                                   "title": "shell", "toolName": "shell", "toolCallId": f"c{call_no}",
+                                   "timestamp": bb["ts"], "target": f'step {bb["step"]}',
+                                   "summary": redact(re.sub(r"\s+", " ", content))[:180]})
+                counts["tool_call"] += 1; idx += 1
+                partial = redact(e.get("content") or "")[:MAX_RESULT_CHARS]
+                out_events.append({"type": "tool_result", "sourceIndex": idx,
+                                   "content": partial or "(command produced no output)",
+                                   "title": "shell output (tail of transcript)", "toolName": "shell",
+                                   "toolCallId": f"c{call_no}", "status": "success",
+                                   "summary": "partial output — transcript starts mid-stream"})
+                counts["tool_result"] += 1; idx += 1
+                continue
             if tag == "call_only":
                 call_no += 1
                 content = redact(bb["raw"] or "")
@@ -411,15 +483,6 @@ for tdir in sorted(glob.glob(PACK + "/tasks/*")):
                                    "summary": "output not captured (capture gap, not an agent failure)",
                                    "timestamp": bb["ts"]})
                 counts["tool_result"] += 1; idx += 1
-                continue
-            if tag == "head":
-                content = redact(e.get("content") or "")[:MAX_RESULT_CHARS]
-                if content.strip():
-                    out_events.append({"type": "tool_result", "sourceIndex": idx, "content": content,
-                                       "title": "shell output (tail of transcript)", "toolName": "shell",
-                                       "toolCallId": f"c{call_no}", "status": "success",
-                                       "summary": "partial output — transcript starts mid-stream"})
-                    counts["tool_result"] += 1; idx += 1
                 continue
             typ, content = e["type"], redact(e.get("content") or "")
             if typ == "tool_result" and len(content) > MAX_RESULT_CHARS:

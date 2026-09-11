@@ -154,7 +154,7 @@ above waiting for it.
 | # | Store | Where it comes from | Unlocks |
 |---|---|---|---|
 | 1 | **Per-step token usage** → `events[].stepMetrics`, `tokenUsage.*` | the provider response `usage` block on every call | per-step token strip, real composition bar, cost-per-step curves, context-growth charts |
-| 2 | **Full stdout/stderr per command** → `command_result.payload.{stdout, stderr, exit_code, duration_ms}` | the runner already has them; it writes only `command` | closes the 62 % hole — 644 of 1039 calls currently have no output anywhere |
+| 2 | **Full stdout/stderr per command** → `command_result.payload.{stdout, stderr, exit_code, duration_ms}` | the runner already has them; it writes only `command` | closes the 59 % hole — 610 of 1,039 calls currently have no output anywhere |
 | 3 | **Structured rollout** → codex JSONL session file instead of rendered stdout | `~/.codex/sessions/*.jsonl` | removes the prose-vs-stdout heuristic entirely; exact message boundaries |
 | 4 | **Agent final diff** → `environment.agentPatch` (+ `agentPatchFiles`, `agentPatchAdd/Del`) | `git diff` in the workspace when the run ends | agent-patch vs gold-patch side by side — the thing you actually want to look at on a failure |
 | 5 | **Per-test results** → `environment.testResults[] {id, arm, status, duration}` | the verifier already runs pytest; parse `-rA` / junit-xml instead of keeping the tail | which test flipped and when; real F2P/P2P sets instead of "1 failing on empty patch" |

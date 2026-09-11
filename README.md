@@ -68,10 +68,10 @@ field and it appears with no viewer change. For SWE runs the pipeline panel
 becomes a provenance panel — commit source, task construction, both gate arms
 with their raw pytest tails, suite-flip evidence, gold patch and hidden tests.
 
-Read `schema/SWE_FIELD_COVERAGE.md` before trusting a number: only 395 of the
-1,039 commands in this corpus have output anywhere in the pack, because the
-harness keeps the last ~59 KB of the codex transcript and its `command_result`
-events store the command but never the output. Those calls carry
+Read `schema/SWE_FIELD_COVERAGE.md` before trusting a number: 610 of the 1,039
+commands in this corpus have no output anywhere in the pack (395 have it in full,
+34 only its tail), because the harness keeps the last ~59 KB of the codex
+transcript and its `command_result` events store the command but never the output. Those calls carry
 `status: "missing"` — rendered muted, and kept out of every failure count,
 because a capture gap is not an agent failure.
 

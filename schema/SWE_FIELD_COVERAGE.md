@@ -50,7 +50,7 @@ The transcript is a structured stream (`exec` / result line / stdout / `codex` /
 |---|---|---|
 | Reasoning (`thinking`) events | 0 | **393** |
 | Assistant messages | 0 (1 blob/run) | **258** |
-| Command stdout (`tool_result`) | 0 | **1,073** |
+| Command results (`tool_result`), one per call | 0 | **1,039** (395 full · 34 tail only · 610 `missing`) |
 | Exit status + duration per call | 0 | 395 calls |
 | Token footer | 0 | 45 runs |
 
@@ -100,11 +100,12 @@ These are capture-time losses. The exporter surfaces them instead of hiding them
 |---|---|
 | `command_result` events (every command) | **1,039** |
 | `exec` blocks surviving in transcripts | **396** |
-| commands with captured stdout | **395 (38 %)** |
-| commands with no output anywhere in the pack | **644 (62 %)** |
+| commands with their full stdout | **395 (38 %)** |
+| commands whose output tail is where the transcript opens | **34 (3 %)** |
+| commands with no output anywhere in the pack | **610 (59 %)** |
 
 Worst case `electrum-mine-0a1977a7`: 126 commands, 2 with output. In the explorer
-those 644 calls carry an explicit `output not captured` result rather than
+those 610 calls carry an explicit `output not captured` result rather than
 disappearing, so the timeline still matches the real step count.
 
 ### 2b. `command_result` never stores output
