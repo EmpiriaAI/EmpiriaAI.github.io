@@ -52,13 +52,25 @@ trajectory-explorer.html   linear event stream; ?category=feedback|swe opens a t
 trajectory-dialogue.html   two-lane reader: fed-to-model left, model-produced right
 trajectory-data.js         two feedback runs + django__django-11119 (inline)
 swe-trajectory-data.js     83 swe-task-forge rollouts over 47 tasks (inline)
+tb-trajectory-index.js     42 Terminal-Bench calibration attempts, bodies lazy in data/
 feedback-snapshot-index.js 42 feedback snapshots, bodies lazy in data/
 tools/                     importers that produce the data files above
 schema/                    the SWE field contract and its capture-gap ledger
 ```
 
-Both pages concatenate `EMPIRIA_RAW_TRAJECTORIES`, `EMPIRIA_SWE_TRAJECTORIES`
-and `EMPIRIA_FEEDBACK_SNAPSHOTS` and route on `trajectoryClass`.
+Both pages concatenate `EMPIRIA_RAW_TRAJECTORIES`, `EMPIRIA_SWE_TRAJECTORIES`,
+`EMPIRIA_TB_TRAJECTORIES` and `EMPIRIA_FEEDBACK_SNAPSHOTS` and route on
+`trajectoryClass`.
+
+**Terminal-Bench runs** come from `tools/import-tb-calibration.py`. A tb pack
+keeps each calibration attempt only as a verdict and a final summary; the
+attempts were Claude Code sessions, so the importer finds each attempt's session
+(by final message, then duration, then model), runs it through the feedback
+importer's own `build_events()`, and adds real per-step token usage, the command
+behind every `ssh … docker exec`, and the task's calibration: grade, strong and
+weak model scores, every attempt on the task, both gate arms and the hidden-suite
+log. Host names specific to where the sessions ran go in an uncommitted
+`--redact` file.
 
 **SWE rollouts** come from `tools/export-swe-trajectories.py`, which reads a
 swe-task-forge pack and the mining manifests behind it. The field contract is
